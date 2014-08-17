@@ -1,0 +1,26 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2012
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CSMClient", "CSMClient\CSMClient.csproj", "{306A8BEB-808B-45D4-875B-787B66FD58DA}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AADHelpers", "AADHelpers\AADHelpers.csproj", "{E985F094-77E0-40E0-8BC0-13D2544695CF}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{306A8BEB-808B-45D4-875B-787B66FD58DA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{306A8BEB-808B-45D4-875B-787B66FD58DA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{306A8BEB-808B-45D4-875B-787B66FD58DA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{306A8BEB-808B-45D4-875B-787B66FD58DA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E985F094-77E0-40E0-8BC0-13D2544695CF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E985F094-77E0-40E0-8BC0-13D2544695CF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E985F094-77E0-40E0-8BC0-13D2544695CF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E985F094-77E0-40E0-8BC0-13D2544695CF}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
