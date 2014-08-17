@@ -13,16 +13,6 @@ namespace CSMClient
 {
     class Program
     {
-        static string[] CSMUrls = new[]
-        {
-            "https://api-next.resources.windows-int.net",
-            "https://api-current.resources.windows-int.net",
-            "https://api-dogfood.resources.windows-int.net",
-            "https://management.azure.com"
-        };
-
-        public const string CSMApiVersion = "2014-01-01";
-
         [STAThread]
         static int Main(string[] args)
         {
@@ -120,6 +110,7 @@ namespace CSMClient
         static void PrintUsage()
         {
             Console.WriteLine("CSMClient supports getting token and simple Http CSM resources.");
+            Console.WriteLine("Source codes are available at https://github.com/suwatch/CSMClient.");
 
             Console.WriteLine();
             Console.WriteLine("Login and get tokens");
