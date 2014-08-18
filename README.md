@@ -19,3 +19,5 @@ Source codes are available at https://github.com/suwatch/CSMClient.
     
     Clear token cache
         CSMClient.exe clearcache ([Prod|Current|Dogfood|Next])
+
+Note: The tokens are cached at `%USERPROFILE%\.csm` folder.  
