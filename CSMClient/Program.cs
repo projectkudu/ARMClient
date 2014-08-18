@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using AADHelpers;
@@ -85,13 +86,14 @@ namespace CSMClient
                     {
                         if (args.Length >= 2)
                         {
+                            var addOutputColor = args.All(a => !a.Equals("-nocolor", StringComparison.OrdinalIgnoreCase));
                             var verb = args[0];
                             var uri = new Uri(args[1]);
                             var env = GetAzureEnvs(uri);
                             var subscriptionId = GetSubscription(uri);
-                            string user = args.Length >= 3 ? args[2] : null;
+                            string user = args.Length >= 3 && !args[2].Equals("-nocolor", StringComparison.OrdinalIgnoreCase) ? args[2] : null;
                             var authResult = TokenUtils.GetTokenBySubscription(env, subscriptionId, user).Result;
-                            HttpInvoke(uri, authResult, verb).Wait();
+                            HttpInvoke(uri, authResult, verb, addOutputColor).Wait();
                             return 0;
                         }
                     }
@@ -118,7 +120,7 @@ namespace CSMClient
 
             Console.WriteLine();
             Console.WriteLine("Call CSM api");
-            Console.WriteLine("    CSMClient.exe [get|post|put|delete] [url] ([user])");
+            Console.WriteLine("    CSMClient.exe [get|post|put|delete] [url] ([user]) (-nocolor)");
 
             Console.WriteLine();
             Console.WriteLine("Copy token to clipboard");
@@ -133,7 +135,7 @@ namespace CSMClient
             Console.WriteLine("    CSMClient.exe clearcache ([Prod|Current|Dogfood|Next])");
         }
 
-        static async Task HttpInvoke(Uri uri, AuthenticationResult authResult, string verb)
+        static async Task HttpInvoke(Uri uri, AuthenticationResult authResult, string verb, bool addOutputColor)
         {
             using (var client = new HttpClient())
             {
@@ -168,16 +170,82 @@ namespace CSMClient
                 var content = response.Content.ReadAsStringAsync().Result.Trim();
                 if (content.StartsWith("["))
                 {
-                    Console.WriteLine(JArray.Parse(content));
+                    if (addOutputColor)
+                    {
+                        PrintColoredJson(JArray.Parse(content));
+                    }
+                    else
+                    {
+                        Console.WriteLine(JArray.Parse(content));
+                    }
                 }
                 else if (content.StartsWith("{"))
                 {
-                    Console.WriteLine(JObject.Parse(content));
+                    if (addOutputColor)
+                    {
+                        PrintColoredJson(JObject.Parse(content));
+                    }
+                    else
+                    {
+                        Console.WriteLine(JObject.Parse(content));
+                    }
                 }
                 else
                 {
                     Console.WriteLine(content);
                 }
+            }
+        }
+
+        //http://stackoverflow.com/questions/4810841/how-can-i-pretty-print-json-using-javascript
+        static void PrintColoredJson(JContainer json)
+        {
+            const string jsonPatterns =
+                @"(\s*""(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\""])*""(\s*:)?|\s*\b(true|false|null)\b|\s*-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?|\s*[\[\{\]\},]|\s*\n)";
+            const ConsoleColor keyColor = ConsoleColor.DarkGreen;
+            const ConsoleColor numbersColor = ConsoleColor.Cyan;
+            const ConsoleColor stringColor = ConsoleColor.DarkYellow;
+            const ConsoleColor booleanColor = ConsoleColor.DarkCyan;
+            const ConsoleColor nullColor = ConsoleColor.DarkMagenta;
+
+            var originalColor = Console.ForegroundColor;
+
+            try
+            {
+
+                var regex = new Regex(jsonPatterns, RegexOptions.None);
+
+                foreach (Match match in regex.Matches(json.ToString()))
+                {
+                    if (match.Success)
+                    {
+                        var value = match.Groups[1].Value;
+                        var currentColor = numbersColor;
+                        if (Regex.IsMatch(value, "^\\s*\""))
+                        {
+                            currentColor = Regex.IsMatch(value, ":$") ? keyColor : stringColor;
+                        }
+                        else if (Regex.IsMatch(value, "true|false"))
+                        {
+                            currentColor = booleanColor;
+                        }
+                        else if (Regex.IsMatch(value, "null"))
+                        {
+                            currentColor = nullColor;
+                        }
+                        else if (Regex.IsMatch(value, @"[\[\{\]\},]"))
+                        {
+                            currentColor = originalColor;
+                        }
+
+                        Console.ForegroundColor = currentColor;
+                        Console.Write(value);
+                    }
+                }
+            }
+            finally
+            {
+                Console.ForegroundColor = originalColor;
             }
         }
 
