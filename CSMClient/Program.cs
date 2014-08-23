@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Text;
@@ -82,18 +83,27 @@ namespace CSMClient
                     }
                     else if (String.Equals(args[0], "get", StringComparison.OrdinalIgnoreCase)
                         || String.Equals(args[0], "delete", StringComparison.OrdinalIgnoreCase)
+                        || String.Equals(args[0], "put", StringComparison.OrdinalIgnoreCase)
                         || String.Equals(args[0], "post", StringComparison.OrdinalIgnoreCase))
                     {
                         if (args.Length >= 2)
                         {
-                            var addOutputColor = args.All(a => !a.Equals("-nocolor", StringComparison.OrdinalIgnoreCase));
+                            Dictionary<string, string> parameters;
+                            args = ParseArguments(args, out parameters);
+                            var addOutputColor = !parameters.ContainsKey("-nocolor");
                             var verb = args[0];
                             var uri = new Uri(args[1]);
                             var env = GetAzureEnvs(uri);
                             var subscriptionId = GetSubscription(uri);
-                            string user = args.Length >= 3 && !args[2].Equals("-nocolor", StringComparison.OrdinalIgnoreCase) ? args[2] : null;
+                            string user = args.Length >= 3 ? args[2] : null;
                             var authResult = TokenUtils.GetTokenBySubscription(env, subscriptionId, user).Result;
-                            HttpInvoke(uri, authResult, verb, addOutputColor).Wait();
+                            string content = null;
+                            string file = null;
+                            if (parameters.TryGetValue("-content", out file))
+                            {
+                                content = File.ReadAllText(file);
+                            }
+                            HttpInvoke(uri, authResult, verb, addOutputColor, content).Wait();
                             return 0;
                         }
                     }
@@ -109,6 +119,34 @@ namespace CSMClient
             }
         }
 
+        static string[] ParseArguments(string[] args, out Dictionary<string, string> parameters)
+        {
+            parameters = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+            var ret = new List<string>();
+            foreach (var arg in args)
+            {
+                if (arg.StartsWith("-"))
+                {
+                    var index = arg.IndexOf(':');
+                    if (index < 0)
+                    {
+                        parameters.Add(arg, String.Empty);
+                    }
+                    else
+                    {
+                        parameters.Add(arg.Substring(0, index), arg.Substring(index + 1));
+                    }
+                }
+                else
+                {
+                    ret.Add(arg);
+                }
+            }
+
+            return ret.ToArray();
+        }
+
         static void PrintUsage()
         {
             Console.WriteLine("CSMClient supports getting token and simple Http CSM resources.");
@@ -120,11 +158,11 @@ namespace CSMClient
 
             Console.WriteLine();
             Console.WriteLine("Call CSM api");
-            Console.WriteLine("    CSMClient.exe [get|post|put|delete] [url] ([user]) (-nocolor)");
+            Console.WriteLine("    CSMClient.exe [get|post|put|delete] [url] ([user]) (-nocolor) (-content:<file>)");
 
             Console.WriteLine();
             Console.WriteLine("Copy token to clipboard");
-            Console.WriteLine("    CSMClient.exe token [tenant] ([user])");
+            Console.WriteLine("    CSMClient.exe token [tenant|subscription] ([user])");
 
             Console.WriteLine();
             Console.WriteLine("List token cache");
@@ -135,7 +173,7 @@ namespace CSMClient
             Console.WriteLine("    CSMClient.exe clearcache ([Prod|Current|Dogfood|Next])");
         }
 
-        static async Task HttpInvoke(Uri uri, AuthenticationResult authResult, string verb, bool addOutputColor)
+        static async Task HttpInvoke(Uri uri, AuthenticationResult authResult, string verb, bool addOutputColor, string payload)
         {
             using (var client = new HttpClient())
             {
@@ -154,7 +192,11 @@ namespace CSMClient
                 }
                 else if (String.Equals(verb, "post", StringComparison.OrdinalIgnoreCase))
                 {
-                    response = await client.PostAsync(uri, new StringContent(String.Empty, Encoding.UTF8, "application/json"));
+                    response = await client.PostAsync(uri, new StringContent(payload ?? String.Empty, Encoding.UTF8, "application/json"));
+                }
+                else if (String.Equals(verb, "put", StringComparison.OrdinalIgnoreCase))
+                {
+                    response = await client.PutAsync(uri, new StringContent(payload ?? String.Empty, Encoding.UTF8, "application/json"));
                 }
                 else
                 {

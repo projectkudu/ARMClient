@@ -84,7 +84,7 @@ namespace AADHelpers
 
                     var user = authResult.UserInfo.UserId;
                     var details = tenantCache[tenantId];
-                    Console.WriteLine("User: {0}, Tenant: {1}, {2} ({3})", user, tenantId, details.displayName, details.domain);
+                    Console.WriteLine("User: {0}, Tenant: {1} {2} ({3})", user, tenantId, details.displayName, details.domain);
 
                     var subscriptions = details.subscriptions;
                     Console.WriteLine("\tThere are {0} subscriptions", subscriptions.Length);
@@ -110,6 +110,17 @@ namespace AADHelpers
                     env = value;
                     found = true;
                     break;
+                }
+
+                foreach (var tenant in tenantCache)
+                {
+                    if (tenant.Value.subscriptions.Any(s => s.subscriptionId == tenantId))
+                    {
+                        tenantId = tenant.Key;
+                        env = value;
+                        found = true;
+                        break;
+                    }
                 }
             }
 
@@ -234,11 +245,11 @@ namespace AADHelpers
                     var details = await GetTenantDetail(env, result, tenantId);
                     info.displayName = details.displayName;
                     info.domain = details.verifiedDomains.First(d => d.@default).name;
-                    Console.WriteLine("User: {0}, Tenant: {1}, {2} ({3})", result.UserInfo.UserId, tenantId, details.displayName, details.verifiedDomains.First(d => d.@default).name);
+                    Console.WriteLine("User: {0}, Tenant: {1} {2} ({3})", result.UserInfo.UserId, tenantId, details.displayName, details.verifiedDomains.First(d => d.@default).name);
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine("User: {0}, Tenant: {1}, {2}", result.UserInfo.UserId, tenantId, ex.Message);
+                    Console.WriteLine("User: {0}, Tenant: {1} {2}", result.UserInfo.UserId, tenantId, ex.Message);
                 }
 
                 try
