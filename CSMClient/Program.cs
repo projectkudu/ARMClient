@@ -181,6 +181,11 @@ namespace CSMClient
                 client.DefaultRequestHeaders.Add("User-Agent", "CSMClient");
                 client.DefaultRequestHeaders.Add("Accept", "application/json");
 
+                if (IsRdfe(uri))
+                {
+                    client.DefaultRequestHeaders.Add("x-ms-version", "2013-10-01");
+                }
+
                 HttpResponseMessage response = null;
                 if (String.Equals(verb, "get", StringComparison.OrdinalIgnoreCase))
                 {
@@ -291,21 +296,29 @@ namespace CSMClient
             }
         }
 
+        static bool IsRdfe(Uri uri)
+        {
+            return uri.Host == "umapinext.rdfetest.dnsdemo4.com"
+                || uri.Host == "umapi.rdfetest.dnsdemo4.com"
+                || uri.Host == "umapi-preview.core.windows-int.net"
+                || uri.Host == "management.core.windows.net";
+        }
+
         static AzureEnvs GetAzureEnvs(Uri uri)
         {
-            if (uri.Host == "api-next.resources.windows-int.net")
+            if (uri.Host == "api-next.resources.windows-int.net" || uri.Host == "umapinext.rdfetest.dnsdemo4.com")
             {
                 return AzureEnvs.Next;
             }
-            else if (uri.Host == "api-current.resources.windows-int.net")
+            else if (uri.Host == "api-current.resources.windows-int.net" || uri.Host == "umapi.rdfetest.dnsdemo4.com")
             {
                 return AzureEnvs.Current;
             }
-            else if (uri.Host == "api-dogfood.resources.windows-int.net")
+            else if (uri.Host == "api-dogfood.resources.windows-int.net" || uri.Host == "umapi-preview.core.windows-int.net")
             {
                 return AzureEnvs.Dogfood;
             }
-            else if (uri.Host == "management.azure.com")
+            else if (uri.Host == "management.azure.com" || uri.Host == "management.core.windows.net")
             {
                 return AzureEnvs.Prod;
             }
@@ -315,13 +328,20 @@ namespace CSMClient
 
         static string GetSubscription(Uri uri)
         {
-            var paths = uri.PathAndQuery.Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
-            if (paths.Length >= 2 && paths[0] == "subscriptions")
+            try
             {
-                return Guid.Parse(paths[1]).ToString();
-            }
+                var paths = uri.PathAndQuery.Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
+                if (paths.Length >= 2 && paths[0] == "subscriptions")
+                {
+                    return Guid.Parse(paths[1]).ToString();
+                }
 
-            throw new InvalidOperationException(String.Format("Invalid url {0}!", uri));
+                return Guid.Parse(paths[0]).ToString();
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException(String.Format("Invalid url {0}!", uri), ex);
+            }
         }
     }
 }
