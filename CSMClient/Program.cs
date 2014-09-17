@@ -71,8 +71,21 @@ namespace CSMClient
                         if (args.Length >= 2)
                         {
                             string tenantId = Guid.Parse(args[1]).ToString();
-                            string user = args.Length >= 3 ? args[2] : null;
-                            var authResult = TokenUtils.GetTokenByTenant(tenantId, user).Result;
+                            string user = null;
+                            AzureEnvs? env = null;
+                            if (args.Length >= 3)
+                            {
+                                user = args[2].Contains("@") ? args[2] : null;
+                                env = user == null ? (AzureEnvs?)Enum.Parse(typeof(AzureEnvs), args[2], true) : null;
+
+                                if (args.Length >= 4)
+                                {
+                                    env = env ?? (AzureEnvs)Enum.Parse(typeof(AzureEnvs), args[3], true);
+                                    user = user ?? args[3];
+                                }
+                            }
+
+                            var authResult = TokenUtils.GetTokenByTenant(tenantId, user, env).Result;
                             var bearer = authResult.CreateAuthorizationHeader();
                             Clipboard.SetText(bearer);
                             Console.WriteLine(bearer);
@@ -95,8 +108,17 @@ namespace CSMClient
                             var uri = new Uri(args[1]);
                             var env = GetAzureEnvs(uri);
                             var subscriptionId = GetSubscription(uri);
-                            string user = args.Length >= 3 ? args[2] : null;
-                            var authResult = TokenUtils.GetTokenBySubscription(env, subscriptionId, user).Result;
+                            AuthenticationResult authResult;
+                            if (String.IsNullOrEmpty(subscriptionId))
+                            {
+                                authResult = TokenUtils.GetRecentToken(env).Result;
+                            }
+                            else
+                            {
+                                string user = args.Length >= 3 ? args[2] : null;
+                                authResult = TokenUtils.GetTokenBySubscription(env, subscriptionId, user).Result;
+                            }
+
                             string content = null;
                             string file = null;
                             if (parameters.TryGetValue("-content", out file))
@@ -162,7 +184,7 @@ namespace CSMClient
 
             Console.WriteLine();
             Console.WriteLine("Copy token to clipboard");
-            Console.WriteLine("    CSMClient.exe token [tenant|subscription] ([user])");
+            Console.WriteLine("    CSMClient.exe token [tenant|subscription] ([Prod|Current|Dogfood|Next]) ([user])");
 
             Console.WriteLine();
             Console.WriteLine("List token cache");
@@ -306,19 +328,19 @@ namespace CSMClient
 
         static AzureEnvs GetAzureEnvs(Uri uri)
         {
-            if (uri.Host == "api-next.resources.windows-int.net" || uri.Host == "umapinext.rdfetest.dnsdemo4.com")
+            if (uri.Host == "api-next.resources.windows-int.net" || uri.Host == "umapinext.rdfetest.dnsdemo4.com" || uri.Host.EndsWith(".antares-int.windows-int.net", StringComparison.OrdinalIgnoreCase))
             {
                 return AzureEnvs.Next;
             }
-            else if (uri.Host == "api-current.resources.windows-int.net" || uri.Host == "umapi.rdfetest.dnsdemo4.com")
+            else if (uri.Host == "api-current.resources.windows-int.net" || uri.Host == "umapi.rdfetest.dnsdemo4.com" || uri.Host.EndsWith(".antdir0.antares-test.windows-int.net", StringComparison.OrdinalIgnoreCase))
             {
                 return AzureEnvs.Current;
             }
-            else if (uri.Host == "api-dogfood.resources.windows-int.net" || uri.Host == "umapi-preview.core.windows-int.net")
+            else if (uri.Host == "api-dogfood.resources.windows-int.net" || uri.Host == "umapi-preview.core.windows-int.net" || uri.Host.EndsWith(".ant-intapp.windows-int.net", StringComparison.OrdinalIgnoreCase))
             {
                 return AzureEnvs.Dogfood;
             }
-            else if (uri.Host == "management.azure.com" || uri.Host == "management.core.windows.net")
+            else if (uri.Host == "management.azure.com" || uri.Host == "management.core.windows.net" || uri.Host.EndsWith(".azurewebsites.net", StringComparison.OrdinalIgnoreCase))
             {
                 return AzureEnvs.Prod;
             }
@@ -330,6 +352,14 @@ namespace CSMClient
         {
             try
             {
+                if (uri.Host.EndsWith(".antares-int.windows-int.net", StringComparison.OrdinalIgnoreCase) ||
+                    uri.Host.EndsWith(".antdir0.antares-test.windows-int.net", StringComparison.OrdinalIgnoreCase) ||
+                    uri.Host.EndsWith(".ant-intapp.windows-int.net", StringComparison.OrdinalIgnoreCase) ||
+                    uri.Host.EndsWith(".azurewebsites.net", StringComparison.OrdinalIgnoreCase))
+                {
+                    return null;
+                }
+
                 var paths = uri.PathAndQuery.Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
                 if (paths.Length >= 2 && paths[0] == "subscriptions")
                 {

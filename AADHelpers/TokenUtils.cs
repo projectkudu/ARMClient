@@ -7,7 +7,6 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.IdentityModel.Clients.ActiveDirectory;
-using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
 namespace AADHelpers
@@ -98,38 +97,55 @@ namespace AADHelpers
             }
         }
 
-        public static async Task<AuthenticationResult> GetTokenByTenant(string tenantId, string user = null)
+        public static async Task<AuthenticationResult> GetTokenByTenant(string tenantId, string user, AzureEnvs? env)
         {
-            bool found = false;
-            AzureEnvs env = AzureEnvs.Prod;
-            foreach (AzureEnvs value in Enum.GetValues(typeof(AzureEnvs)))
+            if (env == null)
             {
-                var tenantCache = TenantCache.GetCache(value);
-                if (tenantCache.ContainsKey(tenantId))
+                bool found = false;
+                env = AzureEnvs.Prod;
+                foreach (AzureEnvs value in Enum.GetValues(typeof(AzureEnvs)))
                 {
-                    env = value;
-                    found = true;
-                    break;
-                }
-
-                foreach (var tenant in tenantCache)
-                {
-                    if (tenant.Value.subscriptions.Any(s => s.subscriptionId == tenantId))
+                    var tenantCache = TenantCache.GetCache(value);
+                    if (tenantCache.ContainsKey(tenantId))
                     {
-                        tenantId = tenant.Key;
+                        if (found)
+                        {
+                            Console.WriteLine(env);
+                            Console.WriteLine(value);
+                            throw new InvalidOperationException(String.Format("Multiple envs found for tenant {0}.  Please clearcache <env>!", tenantId));
+                        }
+
                         env = value;
                         found = true;
-                        break;
+                        continue;
                     }
+
+                    foreach (var tenant in tenantCache)
+                    {
+                        if (tenant.Value.subscriptions.Any(s => s.subscriptionId == tenantId))
+                        {
+                            if (found)
+                            {
+                                Console.WriteLine(env);
+                                Console.WriteLine(value);
+                                throw new InvalidOperationException(String.Format("Multiple envs found for subscription {0}.  Please clearcache <env>!", tenantId));
+                            }
+
+                            tenantId = tenant.Key;
+                            env = value;
+                            found = true;
+                            continue;
+                        }
+                    }
+                }
+
+                if (!found)
+                {
+                    throw new InvalidOperationException(String.Format("Cannot find tenant {0} in cache!", tenantId));
                 }
             }
 
-            if (!found)
-            {
-                throw new InvalidOperationException(String.Format("Cannot find tenant {0} in cache!", tenantId));
-            }
-
-            var tokenCache = TokenCache.GetCache(env);
+            var tokenCache = TokenCache.GetCache(env.Value);
             var authResults = tokenCache.Where(p => (String.IsNullOrEmpty(user) || p.Key.UserId == user) && p.Key.TenantId == tenantId)
                 .Select(p => AuthenticationResult.Deserialize(Encoding.UTF8.GetString(Convert.FromBase64String(p.Value)))).ToArray();
             if (authResults.Length <= 0)
@@ -154,13 +170,14 @@ namespace AADHelpers
             else
             {
                 var authResult = authResults[0];
-                if (authResult.ExpiresOn > DateTime.UtcNow)
+                if (authResult.ExpiresOn <= DateTime.UtcNow)
                 {
-                    return authResult;
+                    authResult = await GetAuthorizationResult(env.Value, tokenCache, authResult.TenantId, authResult.UserInfo.UserId);
+                    TokenCache.SaveCache(env.Value, tokenCache);
                 }
 
-                authResult = await GetAuthorizationResult(env, tokenCache, authResult.TenantId, authResult.UserInfo.UserId);
-                TokenCache.SaveCache(env, tokenCache);
+                SaveRecentToken(env.Value, authResult);
+
                 return authResult;
             }
         }
@@ -169,12 +186,12 @@ namespace AADHelpers
         {
             var tenantCache = TenantCache.GetCache(env);
             var pairs = tenantCache.Where(p => p.Value.subscriptions.Any(subscription => subscriptionId == subscription.subscriptionId)).ToArray();
-            if (pairs.Length > 0)
+            if (pairs.Length == 0)
             {
-                return await GetTokenByTenant(pairs[0].Key, user);
+                throw new InvalidOperationException(String.Format("Cannot find subscription {0} in {1} cache!", subscriptionId, env));
             }
 
-            throw new InvalidOperationException(String.Format("Cannot find subscription {0} in {1} cache!", subscriptionId, env));
+            return await GetTokenByTenant(pairs[0].Key, user, env);
         }
         
         private static Task<AuthenticationResult> GetAuthorizationResult(AzureEnvs env, Dictionary<TokenCacheKey, string> tokenCache, string tenantId = "common", string user = null)
@@ -375,6 +392,38 @@ namespace AADHelpers
                     throw new InvalidOperationException(String.Format("GetTenantDetail {0}, {1}", response.StatusCode, await response.Content.ReadAsStringAsync()));
                 }
             }
+        }
+
+        public static async Task<AuthenticationResult> GetRecentToken(AzureEnvs env)
+        {
+            var recentTokenFile = GetRecentTokenFile(env);
+            if (!File.Exists(recentTokenFile))
+            {
+                throw new InvalidOperationException("No recently used token found for env " + env);
+            }
+
+            var authResult = AuthenticationResult.Deserialize(File.ReadAllText(recentTokenFile));
+            if (authResult.ExpiresOn <= DateTime.UtcNow)
+            {
+                var tokenCache = TokenCache.GetCache(env);
+                authResult = await GetAuthorizationResult(env, tokenCache, authResult.TenantId, authResult.UserInfo.UserId);
+                TokenCache.SaveCache(env, tokenCache);
+                SaveRecentToken(env, authResult);
+            }
+
+            return authResult;
+        }
+
+        public static void SaveRecentToken(AzureEnvs env, AuthenticationResult authResult)
+        {
+            File.WriteAllText(GetRecentTokenFile(env), authResult.Serialize());
+        }
+
+        private static string GetRecentTokenFile(AzureEnvs env)
+        {
+            var path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".csm");
+            Directory.CreateDirectory(path);
+            return Path.Combine(path, String.Format("token_{0}.json", env));
         }
 
         public class ResultOf<T>
