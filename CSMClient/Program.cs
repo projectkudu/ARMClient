@@ -90,6 +90,32 @@ namespace CSMClient
                             Clipboard.SetText(bearer);
                             Console.WriteLine(bearer);
                             Console.WriteLine();
+                            DumpClaims(authResult.AccessToken);
+                            Console.WriteLine();
+                            Console.WriteLine("Token copied to clipboard successfully.");
+                            return 0;
+                        }
+                    }
+                    else if (String.Equals(args[0], "spn", StringComparison.OrdinalIgnoreCase))
+                    {
+                        if (args.Length >= 4)
+                        {
+                            AzureEnvs env = AzureEnvs.Prod;
+                            if (args.Length >= 5)
+                            {
+                                env = (AzureEnvs)Enum.Parse(typeof(AzureEnvs), args[4], ignoreCase: true);
+                            }
+
+                            string tenantId = Guid.Parse(args[1]).ToString();
+                            string appId = Guid.Parse(args[2]).ToString();
+                            string appKey = args[3];
+                            var authResult = TokenUtils.GetTokenBySpn(tenantId, appId, appKey, env);
+                            var bearer = authResult.CreateAuthorizationHeader();
+                            Clipboard.SetText(bearer);
+                            Console.WriteLine(bearer);
+                            Console.WriteLine();
+                            DumpClaims(authResult.AccessToken);
+                            Console.WriteLine();
                             Console.WriteLine("Token copied to clipboard successfully.");
                             return 0;
                         }
@@ -169,6 +195,22 @@ namespace CSMClient
             return ret.ToArray();
         }
 
+        static void DumpClaims(string accessToken)
+        {
+            var base64 = accessToken.Split('.')[1];
+
+            // fixup
+            int mod4 = base64.Length % 4;
+            if (mod4 > 0)
+            {
+                base64 += new string('=', 4 - mod4);
+            }
+
+            var json = Encoding.UTF8.GetString(Convert.FromBase64String(base64));
+            PrintColoredJson(JObject.Parse(json));
+            Console.WriteLine();
+        }
+
         static void PrintUsage()
         {
             Console.WriteLine("CSMClient supports getting token and simple Http CSM resources.");
@@ -185,6 +227,10 @@ namespace CSMClient
             Console.WriteLine();
             Console.WriteLine("Copy token to clipboard");
             Console.WriteLine("    CSMClient.exe token [tenant|subscription] ([Prod|Current|Dogfood|Next]) ([user])");
+
+            Console.WriteLine();
+            Console.WriteLine("Copy token by ServicePrincipalName to clipboard");
+            Console.WriteLine("    CSMClient.exe spn [tenant] [appId] [appKey] ([Prod|Current|Dogfood|Next])");
 
             Console.WriteLine();
             Console.WriteLine("List token cache");
@@ -326,13 +372,20 @@ namespace CSMClient
                 || uri.Host == "management.core.windows.net";
         }
 
+        static bool IsGraphApi(Uri uri)
+        {
+            return uri.Host == "graph.ppe.windows.net"
+                || uri.Host == "graph.windows.net";
+        }
+
         static AzureEnvs GetAzureEnvs(Uri uri)
         {
             if (uri.Host == "api-next.resources.windows-int.net" || uri.Host == "umapinext.rdfetest.dnsdemo4.com" || uri.Host.EndsWith(".antares-int.windows-int.net", StringComparison.OrdinalIgnoreCase))
             {
                 return AzureEnvs.Next;
             }
-            else if (uri.Host == "api-current.resources.windows-int.net" || uri.Host == "umapi.rdfetest.dnsdemo4.com" || uri.Host.EndsWith(".antdir0.antares-test.windows-int.net", StringComparison.OrdinalIgnoreCase))
+            else if (uri.Host == "api-current.resources.windows-int.net" || uri.Host == "umapi.rdfetest.dnsdemo4.com"
+                || uri.Host == "graph.ppe.windows.net" || uri.Host.EndsWith(".antdir0.antares-test.windows-int.net", StringComparison.OrdinalIgnoreCase))
             {
                 return AzureEnvs.Current;
             }
@@ -340,7 +393,8 @@ namespace CSMClient
             {
                 return AzureEnvs.Dogfood;
             }
-            else if (uri.Host == "management.azure.com" || uri.Host == "management.core.windows.net" || uri.Host.EndsWith(".azurewebsites.net", StringComparison.OrdinalIgnoreCase))
+            else if (uri.Host == "management.azure.com" || uri.Host == "management.core.windows.net"
+                || uri.Host == "graph.windows.net" || uri.Host.EndsWith(".azurewebsites.net", StringComparison.OrdinalIgnoreCase))
             {
                 return AzureEnvs.Prod;
             }
@@ -356,6 +410,18 @@ namespace CSMClient
                     uri.Host.EndsWith(".antdir0.antares-test.windows-int.net", StringComparison.OrdinalIgnoreCase) ||
                     uri.Host.EndsWith(".ant-intapp.windows-int.net", StringComparison.OrdinalIgnoreCase) ||
                     uri.Host.EndsWith(".azurewebsites.net", StringComparison.OrdinalIgnoreCase))
+                {
+                    return null;
+                }
+
+                if (uri.AbsolutePath.StartsWith("/tenants", StringComparison.OrdinalIgnoreCase) ||
+                    uri.AbsolutePath.StartsWith("/providers", StringComparison.OrdinalIgnoreCase) ||
+                    uri.AbsolutePath.Equals("/subscriptions", StringComparison.OrdinalIgnoreCase))
+                {
+                    return null;
+                }
+
+                if (IsGraphApi(uri))
                 {
                     return null;
                 }

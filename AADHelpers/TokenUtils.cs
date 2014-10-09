@@ -97,6 +97,22 @@ namespace AADHelpers
             }
         }
 
+        public static AuthenticationResult GetTokenBySpn(string tenantId, string appId, string appKey, AzureEnvs env)
+        {
+            var tokenCache = TokenCache.GetCache(env);
+            var authority = String.Format("{0}/{1}", AADLoginUrls[(int)env], tenantId);
+            var context = new AuthenticationContext(
+                authority: authority,
+                validateAuthority: true,
+                tokenCacheStore: tokenCache);
+            var credential = new ClientCredential(appId, appKey);
+            var authResult = context.AcquireToken("https://management.core.windows.net/", credential);
+
+            SaveRecentToken(env, authResult);
+
+            return authResult;
+        }
+
         public static async Task<AuthenticationResult> GetTokenByTenant(string tenantId, string user, AzureEnvs? env)
         {
             if (env == null)
@@ -403,7 +419,7 @@ namespace AADHelpers
             }
 
             var authResult = AuthenticationResult.Deserialize(File.ReadAllText(recentTokenFile));
-            if (authResult.ExpiresOn <= DateTime.UtcNow)
+            if (!String.IsNullOrEmpty(authResult.RefreshToken) && authResult.ExpiresOn <= DateTime.UtcNow)
             {
                 var tokenCache = TokenCache.GetCache(env);
                 authResult = await GetAuthorizationResult(env, tokenCache, authResult.TenantId, authResult.UserInfo.UserId);
