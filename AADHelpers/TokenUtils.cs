@@ -63,6 +63,7 @@ namespace AADHelpers
         {
             TenantCache.ClearCache(env);
             TokenCache.ClearCache(env);
+            ClearRecentToken(env);
         }
 
         public static void DumpTokenCache(AzureEnvs env)
@@ -99,7 +100,7 @@ namespace AADHelpers
 
         public static AuthenticationResult GetTokenBySpn(string tenantId, string appId, string appKey, AzureEnvs env)
         {
-            var tokenCache = TokenCache.GetCache(env);
+            var tokenCache = new Dictionary<TokenCacheKey, string>();
             var authority = String.Format("{0}/{1}", AADLoginUrls[(int)env], tenantId);
             var context = new AuthenticationContext(
                 authority: authority,
@@ -110,6 +111,7 @@ namespace AADHelpers
 
             SaveRecentToken(env, authResult);
 
+            //TokenCache.SaveCache(env, tokenCache);
             return authResult;
         }
 
@@ -433,6 +435,17 @@ namespace AADHelpers
         public static void SaveRecentToken(AzureEnvs env, AuthenticationResult authResult)
         {
             File.WriteAllText(GetRecentTokenFile(env), authResult.Serialize());
+        }
+
+        public static void ClearRecentToken(AzureEnvs env)
+        {
+            var file = GetRecentTokenFile(env);
+            Console.Write("Deleting {0} ... ", file);
+            if (File.Exists(file))
+            {
+                File.Delete(file);
+            }
+            Console.WriteLine("Done!");
         }
 
         private static string GetRecentTokenFile(AzureEnvs env)
