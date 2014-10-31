@@ -232,7 +232,7 @@ namespace AADHelpers
                             resource: "https://management.core.windows.net/",
                             clientId: AzureToolClientId,
                             redirectUri: new Uri("urn:ietf:wg:oauth:2.0:oob"),
-                            userId: user);
+                            userId: null);
                     }
                     else
                     {

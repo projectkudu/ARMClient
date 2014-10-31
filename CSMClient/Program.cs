@@ -29,6 +29,7 @@ namespace CSMClient
                         {
                             env = (AzureEnvs)Enum.Parse(typeof(AzureEnvs), args[1], ignoreCase: true);
                         }
+                        TokenUtils.ClearTokenCache(env);
                         TokenUtils.AcquireToken(env).Wait();
                         return 0;
                     }
@@ -43,7 +44,7 @@ namespace CSMClient
                         {
                             foreach (AzureEnvs env in Enum.GetValues(typeof(AzureEnvs)))
                             {
-                                Console.WriteLine("Env: {0}", env);
+                                Console.WriteLine("Env: {0} =====================", env);
                                 TokenUtils.DumpTokenCache(env);
                                 Console.WriteLine();
                             }
@@ -243,10 +244,10 @@ namespace CSMClient
 
         static async Task HttpInvoke(Uri uri, AuthenticationResult authResult, string verb, bool addOutputColor, string payload)
         {
-            using (var client = new HttpClient())
+            using (var client = new HttpClient(new HttpLoggingHandler(new HttpClientHandler(), addOutputColor)))
             {
                 client.DefaultRequestHeaders.Add("Authorization", authResult.CreateAuthorizationHeader());
-                client.DefaultRequestHeaders.Add("User-Agent", "CSMClient");
+                client.DefaultRequestHeaders.Add("User-Agent", "CSMClient-" + Environment.MachineName);
                 client.DefaultRequestHeaders.Add("Accept", "application/json");
 
                 if (IsRdfe(uri))
@@ -276,44 +277,12 @@ namespace CSMClient
                     throw new InvalidOperationException(String.Format("Invalid http verb {0}!", verb));
                 }
 
-                Console.WriteLine("HttpStatus: {0}", response.StatusCode);
-                foreach (var header in response.Headers)
-                {
-                    Console.WriteLine("{0}: {1}", header.Key, String.Join("; ", header.Value));
-                }
-
-                var content = response.Content.ReadAsStringAsync().Result.Trim();
-                if (content.StartsWith("["))
-                {
-                    if (addOutputColor)
-                    {
-                        PrintColoredJson(JArray.Parse(content));
-                    }
-                    else
-                    {
-                        Console.WriteLine(JArray.Parse(content));
-                    }
-                }
-                else if (content.StartsWith("{"))
-                {
-                    if (addOutputColor)
-                    {
-                        PrintColoredJson(JObject.Parse(content));
-                    }
-                    else
-                    {
-                        Console.WriteLine(JObject.Parse(content));
-                    }
-                }
-                else
-                {
-                    Console.WriteLine(content);
-                }
+                response.Dispose();
             }
         }
 
         //http://stackoverflow.com/questions/4810841/how-can-i-pretty-print-json-using-javascript
-        static void PrintColoredJson(JContainer json)
+        public static void PrintColoredJson(JContainer json)
         {
             const string jsonPatterns =
                 @"(\s*""(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\""])*""(\s*:)?|\s*\b(true|false|null)\b|\s*-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?|\s*[\[\{\]\},]|\s*\n)";
