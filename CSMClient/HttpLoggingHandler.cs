@@ -105,7 +105,7 @@ namespace CSMClient
 
         private async Task DumpContent(HttpContent content)
         {
-            if (content == null)
+            if (content == null || content.Headers.ContentType == null)
             {
                 return;
             }
