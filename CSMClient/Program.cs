@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Net.Http;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -29,7 +28,6 @@ namespace CSMClient
                         {
                             env = (AzureEnvs)Enum.Parse(typeof(AzureEnvs), args[1], ignoreCase: true);
                         }
-                        TokenUtils.ClearTokenCache(env);
                         TokenUtils.AcquireToken(env).Wait();
                         return 0;
                     }

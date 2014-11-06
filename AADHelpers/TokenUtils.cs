@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Configuration;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Text;
 using System.Threading;
@@ -45,14 +47,34 @@ namespace AADHelpers
 
         public const string AzureToolClientId = "1950a258-227b-4e31-a9cf-717495945fc2";
         public const string CSMApiVersion = "2014-01-01";
-        public const string AADGraphApiVersion = "1.2-internal";
+        public const string AADGraphApiVersion = "1.5";
+
+        private static string _aadTenantId;
+        private static string _aadClientId;
+        private static string _aadRedirectUri;
+
+        public static string AADTenantId 
+        { 
+            get { return _aadTenantId ?? (_aadTenantId = ConfigurationManager.AppSettings["AADTenantId"]); } 
+        }
+
+        public static string AADClientId 
+        { 
+            get { return _aadClientId ?? (_aadClientId = ConfigurationManager.AppSettings["AADClientId"]); } 
+        }
+
+        public static string AADRedirectUri
+        { 
+            get { return _aadRedirectUri ?? (_aadRedirectUri = ConfigurationManager.AppSettings["AADRedirectUri"]); } 
+        }
 
         public static async Task AcquireToken(AzureEnvs env)
         {
-            var tokenCache = TokenCache.GetCache(env);
+            //var tokenCache = TokenCache.GetCache(env);
+            var tokenCache = new Dictionary<TokenCacheKey, string>();
 
-            var authResult = await GetAuthorizationResult(env, tokenCache);
-            Console.WriteLine("Welcome {0}", authResult.UserInfo.UserId);
+            var authResult = await GetAuthorizationResult(env, tokenCache, AADTenantId);
+            Console.WriteLine("Welcome {0} (Tenant: {1})", authResult.UserInfo.UserId, authResult.TenantId);
 
             var tenants = await GetTokenForTenants(env, tokenCache, authResult);
 
@@ -211,8 +233,51 @@ namespace AADHelpers
 
             return await GetTokenByTenant(pairs[0].Key, user, env);
         }
+
+        public static async Task<string> GetTenantBySubscription(AzureEnvs envs, string subscription)
+        {
+            using (var client = new HttpClient())
+            {
+                client.BaseAddress = GetCSMUri(envs);
+
+                // Attempting a Frontdoor request without JWT will return auth discovery header
+                using (var response = await client.GetAsync(String.Format("/subscriptions/{0}?api-version=2014-04-01", subscription)))
+                {
+                    if (response.StatusCode == HttpStatusCode.Unauthorized)
+                    {
+                        // Bearer authorization_uri="https://login.windows-ppe.net/83abe5cd-bcc3-441a-bd86-e6a75360cecc", error="invalid_token", error_description="The access token is missing or invalid."
+                        var authnHeader = response.Headers.WwwAuthenticate.Single();
+                        var parts = authnHeader.Parameter.Split('=', ',');
+                        var authnUrl = parts[1].Trim('"');
+                        return new Uri(authnUrl).AbsolutePath.Trim('/');
+                    }
+
+                    throw new InvalidOperationException("Request subscription information from CSM failed with " + response.StatusCode);
+                }
+            }
+        }
+
+        private static Uri GetCSMUri(AzureEnvs envs)
+        {
+            if (envs == AzureEnvs.Next)
+            {
+                return new Uri("https://api-next.resources.windows-int.net");
+            }
+            else if (envs == AzureEnvs.Current)
+            {
+                return new Uri("https://api-current.resources.windows-int.net");
+            }
+            else if (envs == AzureEnvs.Dogfood)
+            {
+                return new Uri("https://api-dogfood.resources.windows-int.net");
+            }
+            else
+            {
+                return new Uri("https://management.azure.com");
+            }
+        }
         
-        private static Task<AuthenticationResult> GetAuthorizationResult(AzureEnvs env, Dictionary<TokenCacheKey, string> tokenCache, string tenantId = "common", string user = null)
+        private static Task<AuthenticationResult> GetAuthorizationResult(AzureEnvs env, Dictionary<TokenCacheKey, string> tokenCache, string tenantId, string user = null)
         {
             var tcs = new TaskCompletionSource<AuthenticationResult>();
             var thread = new Thread(() =>
@@ -230,16 +295,16 @@ namespace AADHelpers
                     {
                         result = context.AcquireToken(
                             resource: "https://management.core.windows.net/",
-                            clientId: AzureToolClientId,
-                            redirectUri: new Uri("urn:ietf:wg:oauth:2.0:oob"),
+                            clientId: AADClientId,
+                            redirectUri: new Uri(AADRedirectUri),
                             userId: null);
                     }
                     else
                     {
                         result = context.AcquireToken(
                             resource: "https://management.core.windows.net/",
-                            clientId: AzureToolClientId,
-                            redirectUri: new Uri("urn:ietf:wg:oauth:2.0:oob"),
+                            clientId: AADClientId,
+                            redirectUri: new Uri(AADRedirectUri),
                             promptBehavior: PromptBehavior.Always);
                     }
 
@@ -273,7 +338,19 @@ namespace AADHelpers
                     displayName = "unknown",
                     domain = "unknown"
                 };
-                var result = await GetAuthorizationResult(env, tokenCache, tenantId: tenantId, user: authResult.UserInfo.UserId);
+
+                AuthenticationResult result = null;
+                try
+                {
+                    result = await GetAuthorizationResult(env, tokenCache, tenantId: tenantId, user: authResult.UserInfo.UserId);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine("User: {0}, Tenant: {1} {2}", authResult.UserInfo.UserId, tenantId, ex.Message);
+                    Console.WriteLine();
+                    continue;
+                }
+
                 results[tenantId] = result;
                 try
                 {
