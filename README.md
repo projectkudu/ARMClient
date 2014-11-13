@@ -1,9 +1,9 @@
 CSMClient
 =========
 
-CSMClient supports getting token and simple Http CSM resources.
-Source codes are available at https://github.com/suwatch/CSMClient.
+CSMClient faciliates getting token and CSM resource access.  The simplest use case is to acquire token `CSMClient.exe login` and http GET CSM resource such as `CSMClient.exe get https://management.azure.com/subscriptions?api-version=2014-04-01`
 
+Check out [wiki](https://github.com/suwatch/CSMClient/wiki) for more details.
 
     Login and get tokens
         CSMClient.exe login ([Prod|Current|Dogfood|Next])
