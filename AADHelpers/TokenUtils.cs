@@ -78,6 +78,7 @@ namespace AADHelpers
 
             var tenants = await GetTokenForTenants(env, tokenCache, authResult);
 
+            SaveRecentToken(env, authResult);
             TokenCache.SaveCache(env, tokenCache);
         }
 

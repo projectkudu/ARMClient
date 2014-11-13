@@ -40,12 +40,7 @@ namespace CSMClient
                         }
                         else
                         {
-                            foreach (AzureEnvs env in Enum.GetValues(typeof(AzureEnvs)))
-                            {
-                                Console.WriteLine("Env: {0} =====================", env);
-                                TokenUtils.DumpTokenCache(env);
-                                Console.WriteLine();
-                            }
+                            TokenUtils.DumpTokenCache(AzureEnvs.Prod);
                         }
                         return 0;
                     }
@@ -67,6 +62,7 @@ namespace CSMClient
                     }
                     else if (String.Equals(args[0], "token", StringComparison.OrdinalIgnoreCase))
                     {
+                        AuthenticationResult authResult;
                         if (args.Length >= 2)
                         {
                             string tenantId = Guid.Parse(args[1]).ToString();
@@ -84,16 +80,21 @@ namespace CSMClient
                                 }
                             }
 
-                            var authResult = TokenUtils.GetTokenByTenant(tenantId, user, env).Result;
-                            var bearer = authResult.CreateAuthorizationHeader();
-                            Clipboard.SetText(bearer);
-                            Console.WriteLine(bearer);
-                            Console.WriteLine();
-                            DumpClaims(authResult.AccessToken);
-                            Console.WriteLine();
-                            Console.WriteLine("Token copied to clipboard successfully.");
-                            return 0;
+                            authResult = TokenUtils.GetTokenByTenant(tenantId, user, env).Result;
                         }
+                        else
+                        {
+                            authResult = TokenUtils.GetRecentToken(AzureEnvs.Prod).Result;
+                        }
+
+                        var bearer = authResult.CreateAuthorizationHeader();
+                        Clipboard.SetText(bearer);
+                        Console.WriteLine(bearer);
+                        Console.WriteLine();
+                        DumpClaims(authResult.AccessToken);
+                        Console.WriteLine();
+                        Console.WriteLine("Token copied to clipboard successfully.");
+                        return 0;
                     }
                     else if (String.Equals(args[0], "spn", StringComparison.OrdinalIgnoreCase))
                     {
@@ -393,7 +394,7 @@ namespace CSMClient
                     return null;
                 }
 
-                var paths = uri.PathAndQuery.Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
+                var paths = uri.AbsolutePath.Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
                 if (paths.Length >= 2 && paths[0] == "subscriptions")
                 {
                     return Guid.Parse(paths[1]).ToString();
