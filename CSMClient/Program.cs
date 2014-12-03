@@ -353,7 +353,8 @@ namespace CSMClient
                 return AzureEnvs.Next;
             }
             else if (uri.Host == "api-current.resources.windows-int.net" || uri.Host == "umapi.rdfetest.dnsdemo4.com"
-                || uri.Host == "graph.ppe.windows.net" || uri.Host.EndsWith(".antdir0.antares-test.windows-int.net", StringComparison.OrdinalIgnoreCase))
+                || uri.Host == "graph.ppe.windows.net" || uri.Host.EndsWith(".antdir0.antares-test.windows-int.net", StringComparison.OrdinalIgnoreCase)
+                || uri.Host.EndsWith(".antares-test.windows-int.net", StringComparison.OrdinalIgnoreCase))
             {
                 return AzureEnvs.Current;
             }
@@ -375,6 +376,7 @@ namespace CSMClient
             try
             {
                 if (uri.Host.EndsWith(".antares-int.windows-int.net", StringComparison.OrdinalIgnoreCase) ||
+                    uri.Host.EndsWith(".antares-test.windows-int.net", StringComparison.OrdinalIgnoreCase) ||
                     uri.Host.EndsWith(".antdir0.antares-test.windows-int.net", StringComparison.OrdinalIgnoreCase) ||
                     uri.Host.EndsWith(".ant-intapp.windows-int.net", StringComparison.OrdinalIgnoreCase) ||
                     uri.Host.EndsWith(".azurewebsites.net", StringComparison.OrdinalIgnoreCase))
