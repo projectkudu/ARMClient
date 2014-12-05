@@ -33,31 +33,12 @@ namespace CSMClient
                     }
                     else if (String.Equals(args[0], "listcache", StringComparison.OrdinalIgnoreCase))
                     {
-                        if (args.Length > 1)
-                        {
-                            AzureEnvs env = (AzureEnvs)Enum.Parse(typeof(AzureEnvs), args[1], ignoreCase: true);
-                            TokenUtils.DumpTokenCache(env);
-                        }
-                        else
-                        {
-                            TokenUtils.DumpTokenCache(AzureEnvs.Prod);
-                        }
+                        TokenUtils.DumpTokenCache();
                         return 0;
                     }
                     else if (String.Equals(args[0], "clearcache", StringComparison.OrdinalIgnoreCase))
                     {
-                        if (args.Length > 1)
-                        {
-                            AzureEnvs env = (AzureEnvs)Enum.Parse(typeof(AzureEnvs), args[1], ignoreCase: true);
-                            TokenUtils.ClearTokenCache(env);
-                        }
-                        else
-                        {
-                            foreach (AzureEnvs env in Enum.GetValues(typeof(AzureEnvs)))
-                            {
-                                TokenUtils.ClearTokenCache(env);
-                            }
-                        }
+                        TokenUtils.ClearTokenCache();
                         return 0;
                     }
                     else if (String.Equals(args[0], "token", StringComparison.OrdinalIgnoreCase))
@@ -80,11 +61,11 @@ namespace CSMClient
                                 }
                             }
 
-                            authResult = TokenUtils.GetTokenByTenant(tenantId, user, env).Result;
+                            authResult = TokenUtils.GetTokenByTenant(tenantId).Result;
                         }
                         else
                         {
-                            authResult = TokenUtils.GetRecentToken(AzureEnvs.Prod).Result;
+                            authResult = TokenUtils.GetRecentToken().Result;
                         }
 
                         var bearer = authResult.CreateAuthorizationHeader();
@@ -132,17 +113,16 @@ namespace CSMClient
                             var addOutputColor = !parameters.ContainsKey("-nocolor");
                             var verb = args[0];
                             var uri = new Uri(args[1]);
-                            var env = GetAzureEnvs(uri);
+
                             var subscriptionId = GetSubscription(uri);
                             AuthenticationResult authResult;
                             if (String.IsNullOrEmpty(subscriptionId))
                             {
-                                authResult = TokenUtils.GetRecentToken(env).Result;
+                                authResult = TokenUtils.GetRecentToken().Result;
                             }
                             else
                             {
-                                string user = args.Length >= 3 ? args[2] : null;
-                                authResult = TokenUtils.GetTokenBySubscription(env, subscriptionId, user).Result;
+                                authResult = TokenUtils.GetTokenBySubscription(subscriptionId).Result;
                             }
 
                             string content = null;
@@ -222,23 +202,23 @@ namespace CSMClient
 
             Console.WriteLine();
             Console.WriteLine("Call CSM api");
-            Console.WriteLine("    CSMClient.exe [get|post|put|delete] [url] ([user]) (-nocolor) (-content:<file>)");
+            Console.WriteLine("    CSMClient.exe [get|post|put|delete] [url] (-content:<file>)");
 
             Console.WriteLine();
             Console.WriteLine("Copy token to clipboard");
-            Console.WriteLine("    CSMClient.exe token [tenant|subscription] ([Prod|Current|Dogfood|Next]) ([user])");
+            Console.WriteLine("    CSMClient.exe token [tenant|subscription]");
 
-            Console.WriteLine();
-            Console.WriteLine("Copy token by ServicePrincipalName to clipboard");
-            Console.WriteLine("    CSMClient.exe spn [tenant] [appId] [appKey] ([Prod|Current|Dogfood|Next])");
+            //Console.WriteLine();
+            //Console.WriteLine("Copy token by ServicePrincipalName to clipboard");
+            //Console.WriteLine("    CSMClient.exe spn [tenant] [appId] [appKey] ([Prod|Current|Dogfood|Next])");
 
             Console.WriteLine();
             Console.WriteLine("List token cache");
-            Console.WriteLine("    CSMClient.exe listcache ([Prod|Current|Dogfood|Next])");
+            Console.WriteLine("    CSMClient.exe listcache");
 
             Console.WriteLine();
             Console.WriteLine("Clear token cache");
-            Console.WriteLine("    CSMClient.exe clearcache ([Prod|Current|Dogfood|Next])");
+            Console.WriteLine("    CSMClient.exe clearcache");
         }
 
         static async Task HttpInvoke(Uri uri, AuthenticationResult authResult, string verb, bool addOutputColor, string payload)
@@ -346,51 +326,10 @@ namespace CSMClient
                 || uri.Host == "graph.windows.net";
         }
 
-        static AzureEnvs GetAzureEnvs(Uri uri)
-        {
-            if (uri.Host == "api-next.resources.windows-int.net" || uri.Host == "umapinext.rdfetest.dnsdemo4.com" || uri.Host.EndsWith(".antares-int.windows-int.net", StringComparison.OrdinalIgnoreCase))
-            {
-                return AzureEnvs.Next;
-            }
-            else if (uri.Host == "api-current.resources.windows-int.net" || uri.Host == "umapi.rdfetest.dnsdemo4.com"
-                || uri.Host == "graph.ppe.windows.net" || uri.Host.EndsWith(".antdir0.antares-test.windows-int.net", StringComparison.OrdinalIgnoreCase)
-                || uri.Host.EndsWith(".antares-test.windows-int.net", StringComparison.OrdinalIgnoreCase))
-            {
-                return AzureEnvs.Current;
-            }
-            else if (uri.Host == "api-dogfood.resources.windows-int.net" || uri.Host == "umapi-preview.core.windows-int.net" || uri.Host.EndsWith(".ant-intapp.windows-int.net", StringComparison.OrdinalIgnoreCase))
-            {
-                return AzureEnvs.Dogfood;
-            }
-            else if (uri.Host == "management.azure.com" || uri.Host == "management.core.windows.net"
-                || uri.Host == "graph.windows.net" || uri.Host.EndsWith(".azurewebsites.net", StringComparison.OrdinalIgnoreCase))
-            {
-                return AzureEnvs.Prod;
-            }
-
-            throw new InvalidOperationException(String.Format("Invalid CSM host {0}!", uri.Host));
-        }
-
         static string GetSubscription(Uri uri)
         {
             try
             {
-                if (uri.Host.EndsWith(".antares-int.windows-int.net", StringComparison.OrdinalIgnoreCase) ||
-                    uri.Host.EndsWith(".antares-test.windows-int.net", StringComparison.OrdinalIgnoreCase) ||
-                    uri.Host.EndsWith(".antdir0.antares-test.windows-int.net", StringComparison.OrdinalIgnoreCase) ||
-                    uri.Host.EndsWith(".ant-intapp.windows-int.net", StringComparison.OrdinalIgnoreCase) ||
-                    uri.Host.EndsWith(".azurewebsites.net", StringComparison.OrdinalIgnoreCase))
-                {
-                    return null;
-                }
-
-                if (uri.AbsolutePath.StartsWith("/tenants", StringComparison.OrdinalIgnoreCase) ||
-                    uri.AbsolutePath.StartsWith("/providers", StringComparison.OrdinalIgnoreCase) ||
-                    uri.AbsolutePath.Equals("/subscriptions", StringComparison.OrdinalIgnoreCase))
-                {
-                    return null;
-                }
-
                 if (IsGraphApi(uri))
                 {
                     return null;
@@ -402,7 +341,13 @@ namespace CSMClient
                     return Guid.Parse(paths[1]).ToString();
                 }
 
-                return Guid.Parse(paths[0]).ToString();
+                Guid subscription; 
+                if (Guid.TryParse(paths[0], out subscription))
+                {
+                    return subscription.ToString();
+                }
+
+                return null;
             }
             catch (Exception ex)
             {

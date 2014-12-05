@@ -1,9 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
@@ -11,9 +8,9 @@ namespace AADHelpers
 {
     static class TenantCache
     {
-        public static Dictionary<string, TenantCacheInfo> GetCache(AzureEnvs env)
+        public static Dictionary<string, TenantCacheInfo> GetCache()
         {
-            var file = GetCacheFile(env);
+            var file = GetCacheFile();
             if (!File.Exists(file))
             {
                 return new Dictionary<string, TenantCacheInfo>();
@@ -22,29 +19,18 @@ namespace AADHelpers
             return JsonConvert.DeserializeObject<Dictionary<string, TenantCacheInfo>>(File.ReadAllText(file));
         }
 
-        public static void SaveCache(AzureEnvs env, Dictionary<string, TenantCacheInfo> cache)
+        public static void SaveCache(Dictionary<string, TenantCacheInfo> cache)
         {
-            var file = GetCacheFile(env);
+            var file = GetCacheFile();
             var json = JObject.FromObject(cache);
             File.WriteAllText(file, json.ToString());
         }
 
-        public static void ClearCache(AzureEnvs env)
-        {
-            var file = GetCacheFile(env);
-            Console.Write("Deleting {0} ... ", file);
-            if (File.Exists(file))
-            {
-                File.Delete(file);
-            }
-            Console.WriteLine("Done!");
-        }
-
-        private static string GetCacheFile(AzureEnvs env)
+        private static string GetCacheFile()
         {
             var path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".csm");
             Directory.CreateDirectory(path);
-            return Path.Combine(path, String.Format("tenants_{0}.json", env));
+            return Path.Combine(path, "cache_tenants.json");
         }
     }
 

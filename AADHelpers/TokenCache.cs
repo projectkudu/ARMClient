@@ -2,8 +2,6 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Microsoft.IdentityModel.Clients.ActiveDirectory;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -12,9 +10,9 @@ namespace AADHelpers
 {
     static class TokenCache
     {
-        public static Dictionary<TokenCacheKey, string> GetCache(AzureEnvs env)
+        public static Dictionary<TokenCacheKey, string> GetCache()
         {
-            var file = GetCacheFile(env);
+            var file = GetCacheFile();
             if (!File.Exists(file))
             {
                 return new Dictionary<TokenCacheKey, string>();
@@ -24,30 +22,19 @@ namespace AADHelpers
             return dict.ToDictionary(p => p.Value, p => p.Key);
         }
 
-        public static void SaveCache(AzureEnvs env, Dictionary<TokenCacheKey, string> cache)
+        public static void SaveCache(Dictionary<TokenCacheKey, string> cache)
         {
-            var file = GetCacheFile(env);
+            var file = GetCacheFile();
             var dict = cache.ToDictionary(p => p.Value, p => p.Key);
             var json = JObject.FromObject(dict);
             File.WriteAllText(file, json.ToString());
         }
 
-        public static void ClearCache(AzureEnvs env)
-        {
-            var file = GetCacheFile(env);
-            Console.Write("Deleting {0} ... ", file);
-            if (File.Exists(file))
-            {
-                File.Delete(file);
-            }
-            Console.WriteLine("Done!");
-        }
-
-        private static string GetCacheFile(AzureEnvs env)
+        private static string GetCacheFile()
         {
             var path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".csm");
             Directory.CreateDirectory(path);
-            return Path.Combine(path, String.Format("tokens_{0}.json", env));
+            return Path.Combine(path, "cache_tokens.json");
         }
     }
 }
