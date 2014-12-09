@@ -77,13 +77,14 @@ namespace AADHelpers
         {
             var tokenCache = new Dictionary<TokenCacheKey, string>();
 
-            SaveRecentEnv(env);
+            _env = new Lazy<AzureEnvs>(() => env);
 
             var authResult = await GetAuthorizationResult(tokenCache, AADTenantId);
             Console.WriteLine("Welcome {0} (Tenant: {1})", authResult.UserInfo.UserId, authResult.TenantId);
 
             var tenants = await GetTokenForTenants(tokenCache, authResult);
 
+            SaveRecentEnv(env);
             SaveRecentToken(authResult);
             TokenCache.SaveCache(tokenCache);
         }
@@ -214,7 +215,11 @@ namespace AADHelpers
             var pairs = tenantCache.Where(p => p.Value.subscriptions.Any(subscription => subscriptionId == subscription.subscriptionId)).ToArray();
             if (pairs.Length == 0)
             {
-                throw new InvalidOperationException(String.Format("Cannot find subscription {0} cache!", subscriptionId));
+                Console.WriteLine();
+                Console.WriteLine(String.Format("Cannot find subscription {0} cache!   Use recent token instead.", subscriptionId));
+                Console.WriteLine();
+
+                return await GetRecentToken();
             }
 
             return await GetTokenByTenant(pairs[0].Key);
@@ -464,7 +469,7 @@ namespace AADHelpers
         public static async Task<AuthenticationResult> GetRecentToken()
         {
             var recentTokenFile = GetRecentTokenFile();
-            var authResult = AuthenticationResult.Deserialize(File.ReadAllText(recentTokenFile));
+            var authResult = AuthenticationResult.Deserialize(ProtectedFile.ReadAllText(recentTokenFile));
             if (!String.IsNullOrEmpty(authResult.RefreshToken) && authResult.ExpiresOn <= DateTime.UtcNow)
             {
                 var tokenCache = TokenCache.GetCache();
@@ -478,14 +483,14 @@ namespace AADHelpers
 
         public static void SaveRecentToken(AuthenticationResult authResult)
         {
-            File.WriteAllText(GetRecentTokenFile(), authResult.Serialize());
+            ProtectedFile.WriteAllText(GetRecentTokenFile(), authResult.Serialize());
         }
 
         private static string GetRecentTokenFile()
         {
             var path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".csm");
             Directory.CreateDirectory(path);
-            return Path.Combine(path, "recent_token.json");
+            return Path.Combine(path, "recent_token.dat");
         }
 
         public class ResultOf<T>

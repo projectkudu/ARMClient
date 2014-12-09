@@ -16,21 +16,21 @@ namespace AADHelpers
                 return new Dictionary<string, TenantCacheInfo>();
             }
 
-            return JsonConvert.DeserializeObject<Dictionary<string, TenantCacheInfo>>(File.ReadAllText(file));
+            return JsonConvert.DeserializeObject<Dictionary<string, TenantCacheInfo>>(ProtectedFile.ReadAllText(file));
         }
 
         public static void SaveCache(Dictionary<string, TenantCacheInfo> cache)
         {
             var file = GetCacheFile();
             var json = JObject.FromObject(cache);
-            File.WriteAllText(file, json.ToString());
+            ProtectedFile.WriteAllText(file, json.ToString());
         }
 
         private static string GetCacheFile()
         {
             var path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".csm");
             Directory.CreateDirectory(path);
-            return Path.Combine(path, "cache_tenants.json");
+            return Path.Combine(path, "cache_tenants.dat");
         }
     }
 
