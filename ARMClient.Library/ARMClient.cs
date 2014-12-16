@@ -1,6 +1,9 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Dynamic;
 using System.IO;
+using System.Linq;
+using System.Linq.Expressions;
 using System.Net.Http;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -8,6 +11,7 @@ using System.Threading.Tasks;
 using ARMClient.Authentication;
 using ARMClient.Authentication.AADAuthentication;
 using ARMClient.Authentication.Contracts;
+using Microsoft.CSharp.RuntimeBinder;
 
 namespace ARMClient.Library
 {
@@ -82,49 +86,79 @@ namespace ARMClient.Library
             return true;
         }
 
+        public async Task<T> GetAsync<T>()
+        {
+            var httpResponse = await InvokeAsyncDynamicMember("Get", Enumerable.Empty<object>().ToArray());
+            return await httpResponse.Content.ReadAsAsync<T>();
+        }
+
+        public async Task<T> PostAsync<T>(params object[] args)
+        {
+            var httpResponse = await InvokeAsyncDynamicMember("Post", args);
+            return await httpResponse.Content.ReadAsAsync<T>();
+        }
+
+        public async Task<T> PutAsync<T>(params object[] args)
+        {
+            var httpResponse = await InvokeAsyncDynamicMember("Put", args);
+            return await httpResponse.Content.ReadAsAsync<T>();
+        }
+
+        public async Task<T> DeleteAsync<T>()
+        {
+            var httpResponse = await InvokeAsyncDynamicMember("Delete", Enumerable.Empty<object>().ToArray());
+            return await httpResponse.Content.ReadAsAsync<T>();
+        }
+
         public override bool TryInvokeMember(InvokeMemberBinder binder, object[] args, out object result)
         {
-            this._url = string.Format("{0}?api-version={1}", this._url, this._apiVersion);
-            var isAsync = binder.Name.EndsWith("async", StringComparison.OrdinalIgnoreCase);
-            if (string.IsNullOrEmpty(_authorizationHeader))
+            result = InvokeDynamicMember(binder.Name, args);
+            return true;
+        }
+
+        private object InvokeDynamicMember(string memberName, object[] args)
+        {
+            if (string.IsNullOrEmpty(this._authorizationHeader))
             {
-                if (isAsync)
-                {
-                    throw new InvalidDataException(
-                        "To call an Async methond you need to either pass in an AuthorizationHeader or call InitializeToken before");
-                }
-                else
-                {
-                    InitializeToken().Wait();
-                }
+                InitializeToken().Wait();
             }
 
-            Func<string, string> methodName = s => string.Format("{0}{1}", s, isAsync ? "async" : string.Empty);
+            var isAsync = memberName.EndsWith("async", StringComparison.OrdinalIgnoreCase);
+            memberName = isAsync
+                ? memberName.Substring(0, memberName.IndexOf("async", StringComparison.OrdinalIgnoreCase))
+                : memberName;
 
-            if ((String.Equals(binder.Name, methodName("get"), StringComparison.OrdinalIgnoreCase)
-                 || String.Equals(binder.Name, methodName("delete"), StringComparison.OrdinalIgnoreCase)
-                 || String.Equals(binder.Name, methodName("put"), StringComparison.OrdinalIgnoreCase)
-                 || String.Equals(binder.Name, methodName("post"), StringComparison.OrdinalIgnoreCase)))
+
+
+            object result = HttpInvoke(memberName, args);
+
+            return isAsync ? result : ((Task<HttpResponseMessage>)result).Result;
+        }
+
+        private async Task<HttpResponseMessage> InvokeAsyncDynamicMember(string memberName, object[] args)
+        {
+            if (string.IsNullOrEmpty(_authorizationHeader))
             {
-                var verb = isAsync
-                    ? binder.Name.Substring(0, binder.Name.IndexOf("async", StringComparison.OrdinalIgnoreCase))
-                    : binder.Name;
-                var task = HttpInvoke(new Uri(this._url), verb, args.Length > 0 ? args[0].ToString() : string.Empty);
-                if (isAsync)
-                {
-                    result = task;
-                }
-                else
-                {
-                    result = task.Result;
-                }
+                await InitializeToken();
+            }
+
+            if ((String.Equals(memberName, "get", StringComparison.OrdinalIgnoreCase)
+                 || String.Equals(memberName, "delete", StringComparison.OrdinalIgnoreCase)
+                 || String.Equals(memberName, "put", StringComparison.OrdinalIgnoreCase)
+                 || String.Equals(memberName, "post", StringComparison.OrdinalIgnoreCase)))
+            {
+                return await HttpInvoke(memberName, args);
             }
             else
             {
-                throw new InvalidOperationException(string.Format("Method {0} doesn't exist", binder.Name));
+                throw new RuntimeBinderException(string.Format("'ARMClient' does not contain a http definition for '{0}'", memberName));
             }
+        }
 
-            return true;
+        private Task<HttpResponseMessage> HttpInvoke(string httpVerb, object[] args)
+        {
+            this._url = string.Format("{0}?api-version={1}", this._url, this._apiVersion);
+            return HttpInvoke(new Uri(this._url), httpVerb, args.Length > 0 ? args[0].ToString() : string.Empty);
         }
 
         private async Task<HttpResponseMessage> HttpInvoke(Uri uri, string verb, string payload)
@@ -154,7 +188,7 @@ namespace ARMClient.Library
                 }
                 else
                 {
-                    throw new InvalidOperationException(String.Format("Invalid http verb {0}!", verb));
+                    throw new InvalidOperationException(String.Format("Invalid http verb '{0}'!", verb));
                 }
 
                 return response;

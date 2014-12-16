@@ -25,8 +25,8 @@ namespace ARMClient.Authentication.AADAuthentication
             ITenantStorage tenantStorage, IEnvironmentStorage environmentStorage = null)
         {
             this.EnvironmentStorage = environmentStorage;
-            this.TokenStorage = new FileTokenStorage();
-            this.TenantStorage = new FileTenantStorage();
+            this.TokenStorage = tokenStorage;
+            this.TenantStorage = tenantStorage;
             this.AzureEnvironment = azureEnvironment == AzureEnvironments.Prod && environmentStorage != null
                 ? environmentStorage.GetSavedEnvironment()
                 : azureEnvironment;

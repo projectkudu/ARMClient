@@ -29,13 +29,12 @@ namespace ARMClient.Authentication.TokenStorage
             try
             {
                 var recentTokenFile = GetRecentTokenFile();
-                var authResult = AuthenticationResult.Deserialize(ProtectedFile.ReadAllText(recentTokenFile));
-                if (!String.IsNullOrEmpty(authResult.RefreshToken) && authResult.ExpiresOn <= DateTime.UtcNow)
+                recentToken = AuthenticationResult.Deserialize(ProtectedFile.ReadAllText(recentTokenFile));
+                if (!String.IsNullOrEmpty(recentToken.RefreshToken) && recentToken.ExpiresOn <= DateTime.UtcNow)
                 {
-                    recentToken = null;
                     return false;
                 }
-                recentToken = authResult;
+
                 return true;
             }
             catch

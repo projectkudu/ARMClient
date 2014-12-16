@@ -4,7 +4,7 @@ namespace ARMClient.Authentication.EnvironmentStorage
 {
     class MemoryEnvironmentStorage : IEnvironmentStorage
     {
-        private AzureEnvironments _azureEnvironments;
+        private AzureEnvironments _azureEnvironments = AzureEnvironments.Prod;
         public void SaveEnvironment(AzureEnvironments azureEnvironment)
         {
             this._azureEnvironments = azureEnvironment;

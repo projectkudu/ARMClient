@@ -1,8 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net.Http;
-using System.Text;
 using System.Threading.Tasks;
 using ARMClient.Authentication.AADAuthentication;
 using ARMClient.Authentication.Contracts;
@@ -14,25 +10,36 @@ namespace ARMClient.Library.Runner
     {
         private static void Main(string[] args)
         {
-            var csmClient = ARMClient.GetDynamicClient(apiVersion: "2014-04-01", authHelper: new PersistentAuthHelper(AzureEnvironments.Prod));
+            Run().Wait();
+        }
 
-            var sitesResponse = (HttpResponseMessage)csmClient.Subscriptions["{subscriptionName}"].ResourceGroups["{resourceGroupName}"].Providers["Microsoft.Web"].Sites.Get();
+        private static async Task Run()
+        {
+            var csmClient = ARMClient.GetDynamicClient(apiVersion: "2014-04-01", authHelper: new AuthHelper(AzureEnvironments.Prod));
 
-            if (sitesResponse.IsSuccessStatusCode)
+            var resrouceGroups = await csmClient.Subscriptions["{subscriptionId}"]
+                                                .ResourceGroups
+                                                .GetAsync<JObject>();
+
+            foreach (var resrouceGroup in resrouceGroups.value)
             {
-                var sites = sitesResponse.Content.ReadAsAsync<JArray>().Result;
+                var sites = (Site[])await csmClient.Subscriptions["{subscriptionId}"]
+                                                   .ResourceGroups[resrouceGroup.name]
+                                                   .Providers["Microsoft.Web"]
+                                                   .Sites
+                                                   .GetAsync<Site[]>();
 
-                Func<object, bool> p = s => s.ToString().Equals("West US", StringComparison.OrdinalIgnoreCase);
-
-                foreach (dynamic site in sites.Where(t => p(t["location"])))
+                if (sites.Length == 0)
                 {
-                    Console.WriteLine(site.name);
+                    Console.WriteLine("ResrouceGroup: {0} Doesn't contain any websites!", resrouceGroup.name);
                 }
             }
-            else
-            {
-                Console.WriteLine(sitesResponse.Content.ReadAsStringAsync().Result);
-            }
         }
+    }
+
+    public class Site
+    {
+        public string location { get; set; }
+        public string name { get; set; }
     }
 }

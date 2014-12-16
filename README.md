@@ -31,26 +31,27 @@ Example
 =========
 
 ```C#
-private static void Main(string[] args)
+//This example prints the names of all resrouceGroups that don't have sites under a certain subscription
+private static async Task Run()
 {
-    var armClient = ARMClient.GetDynamicClient(apiVersion: "2014-04-01", azureEnvironment: AzureEnvs.Prod);
+    var csmClient = ARMClient.GetDynamicClient(apiVersion: "2014-04-01", authHelper: new AuthHelper(AzureEnvironments.Prod));
 
-    var sitesResponse = (HttpResponseMessage) armClient.Subscriptions["{subscriptionId}"].ResourceGroups["{resourceGroupName}"].Providers["Microsoft.Web"].Sites.Get();
+    var resrouceGroups = await csmClient.Subscriptions["{subscriptionId}"]
+                                        .ResourceGroups
+                                        .GetAsync<JObject>();
 
-    if (sitesResponse.IsSuccessStatusCode)
+    foreach (var resrouceGroup in resrouceGroups.value)
     {
-        var sites = sitesResponse.Content.ReadAsAsync<JArray>().Result;
+        var sites = (Site[])await csmClient.Subscriptions["{subscriptionId}"]
+                                           .ResourceGroups[resrouceGroup.name]
+                                           .Providers["Microsoft.Web"]
+                                           .Sites
+                                           .GetAsync<Site[]>();
 
-        Func<object, bool> p = s => s.ToString().Equals("West US", StringComparison.OrdinalIgnoreCase);
-
-        foreach (dynamic site in sites.Where(t => p(t["location"])))
+        if (sites.Length == 0)
         {
-            Console.WriteLine(site.name);
+            Console.WriteLine("ResrouceGroup: {0} Doesn't contain any websites!", resrouceGroup.name);
         }
-    }
-    else
-    {
-        Console.WriteLine(sitesResponse.Content.ReadAsStringAsync().Result);
     }
 }
 ```
