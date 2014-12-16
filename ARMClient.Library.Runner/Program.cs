@@ -15,15 +15,15 @@ namespace ARMClient.Library.Runner
 
         private static async Task Run()
         {
-            var csmClient = ARMClient.GetDynamicClient(apiVersion: "2014-04-01", authHelper: new AuthHelper(AzureEnvironments.Prod));
+            var armClient = ARMClient.GetDynamicClient(apiVersion: "2014-04-01", authHelper: new AuthHelper(AzureEnvironments.Prod));
 
-            var resrouceGroups = await csmClient.Subscriptions["{subscriptionId}"]
+            var resrouceGroups = await armClient.Subscriptions["{subscriptionId}"]
                                                 .ResourceGroups
                                                 .GetAsync<JObject>();
 
             foreach (var resrouceGroup in resrouceGroups.value)
             {
-                var sites = (Site[])await csmClient.Subscriptions["{subscriptionId}"]
+                var sites = (Site[])await armClient.Subscriptions["{subscriptionId}"]
                                                    .ResourceGroups[resrouceGroup.name]
                                                    .Providers["Microsoft.Web"]
                                                    .Sites
