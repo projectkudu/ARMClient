@@ -10,7 +10,6 @@ namespace ARMClient.Authentication.AADAuthentication
         public PersistentAuthHelper(AzureEnvironments azureEnvironment = AzureEnvironments.Prod)
             : base(azureEnvironment, new FileTokenStorage(), new FileTenantStorage(), new FileEnvironmentStorage())
         {
-
         }
     }
 }

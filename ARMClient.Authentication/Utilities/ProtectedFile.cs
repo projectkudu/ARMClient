@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -6,6 +7,13 @@ namespace ARMClient.Authentication.Utilities
 {
     internal static class ProtectedFile
     {
+        public static string GetCacheFile(string file)
+        {
+            var path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".arm");
+            Directory.CreateDirectory(path);
+            return Path.Combine(path, file);
+        }
+
         public static string ReadAllText(string file)
         {
             var bytes = File.ReadAllBytes(file);

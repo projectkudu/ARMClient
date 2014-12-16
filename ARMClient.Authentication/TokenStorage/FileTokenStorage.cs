@@ -12,9 +12,12 @@ namespace ARMClient.Authentication.TokenStorage
 {
     internal class FileTokenStorage : ITokenStorage
     {
+        private const string _cacheFileName = "cache_tokens.dat";
+        private const string _recentFileName = "recent_token.dat";
+
         public Dictionary<TokenCacheKey, string> GetCache()
         {
-            var file = GetCacheFile();
+            var file = ProtectedFile.GetCacheFile(_cacheFileName);
             if (!File.Exists(file))
             {
                 return new Dictionary<TokenCacheKey, string>();
@@ -24,37 +27,21 @@ namespace ARMClient.Authentication.TokenStorage
             return dict.ToDictionary(p => p.Value, p => p.Key);
         }
 
-        public bool TryGetRecentToken(out AuthenticationResult recentToken)
-        {
-            try
-            {
-                var recentTokenFile = GetRecentTokenFile();
-                recentToken = AuthenticationResult.Deserialize(ProtectedFile.ReadAllText(recentTokenFile));
-                if (!String.IsNullOrEmpty(recentToken.RefreshToken) && recentToken.ExpiresOn <= DateTime.UtcNow)
-                {
-                    return false;
-                }
-
-                return true;
-            }
-            catch
-            {
-                recentToken = null;
-                return false;
-            }
-        }
-
         public void SaveCache(Dictionary<TokenCacheKey, string> tokens)
         {
-            var file = GetCacheFile();
             var dict = tokens.ToDictionary(p => p.Value, p => p.Key);
             var json = JObject.FromObject(dict);
-            ProtectedFile.WriteAllText(file, json.ToString());
+            ProtectedFile.WriteAllText(ProtectedFile.GetCacheFile(_cacheFileName), json.ToString());
+        }
+
+        public AuthenticationResult GetRecentToken()
+        {
+            return AuthenticationResult.Deserialize(ProtectedFile.ReadAllText(ProtectedFile.GetCacheFile(_recentFileName)));
         }
 
         public void SaveRecentToken(AuthenticationResult authResult)
         {
-            ProtectedFile.WriteAllText(GetRecentTokenFile(), authResult.Serialize());
+            ProtectedFile.WriteAllText(ProtectedFile.GetCacheFile(_recentFileName), authResult.Serialize());
         }
 
         public bool IsCacheValid()
@@ -65,27 +52,11 @@ namespace ARMClient.Authentication.TokenStorage
 
         public void ClearCache()
         {
-            var filePaths = new[] { GetCacheFile(), GetRecentTokenFile() };
+            var filePaths = new[] { ProtectedFile.GetCacheFile(_cacheFileName), ProtectedFile.GetCacheFile(_recentFileName) };
             foreach (var filePath in filePaths.Where(File.Exists))
             {
-                Trace.WriteLine(string.Format("Deleting {0} ... ", filePath));
                 File.Delete(filePath);
-                Trace.WriteLine("Done!");
             }
-        }
-
-        private static string GetCacheFile()
-        {
-            var path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".csm");
-            Directory.CreateDirectory(path);
-            return Path.Combine(path, "cache_tokens.dat");
-        }
-
-        private static string GetRecentTokenFile()
-        {
-            var path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".csm");
-            Directory.CreateDirectory(path);
-            return Path.Combine(path, "recent_token.dat");
         }
     }
 }

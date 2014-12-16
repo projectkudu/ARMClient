@@ -11,16 +11,17 @@ namespace ARMClient.Authentication.TenantStorage
 {
     class FileTenantStorage : ITenantStorage
     {
+        private const string _fileName = "cache_tenants.dat";
+
         public void SaveCache(Dictionary<string, TenantCacheInfo> tenants)
         {
-            var file = GetCacheFile();
             var json = JObject.FromObject(tenants);
-            ProtectedFile.WriteAllText(file, json.ToString());
+            ProtectedFile.WriteAllText(ProtectedFile.GetCacheFile(_fileName), json.ToString());
         }
 
         public Dictionary<string, TenantCacheInfo> GetCache()
         {
-            var file = GetCacheFile();
+            var file = ProtectedFile.GetCacheFile(_fileName);
             if (!File.Exists(file))
             {
                 return new Dictionary<string, TenantCacheInfo>();
@@ -37,20 +38,11 @@ namespace ARMClient.Authentication.TenantStorage
 
         public void ClearCache()
         {
-            var filePath = GetCacheFile();
+            var filePath = ProtectedFile.GetCacheFile(_fileName);
             if (File.Exists(filePath))
             {
-                Trace.WriteLine(string.Format("Deleting {0} ... ", filePath));
                 File.Delete(filePath);
-                Trace.WriteLine("Done!");
             }
-        }
-
-        private static string GetCacheFile()
-        {
-            var path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".csm");
-            Directory.CreateDirectory(path);
-            return Path.Combine(path, "cache_tenants.dat");
         }
     }
 }

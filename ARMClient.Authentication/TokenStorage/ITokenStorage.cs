@@ -6,8 +6,8 @@ namespace ARMClient.Authentication.TokenStorage
     public interface ITokenStorage
     {
         Dictionary<TokenCacheKey, string> GetCache();
-        bool TryGetRecentToken(out AuthenticationResult recentToken);
         void SaveCache(Dictionary<TokenCacheKey, string> tokens);
+        AuthenticationResult GetRecentToken();
         void SaveRecentToken(AuthenticationResult authResult);
         bool IsCacheValid();
         void ClearCache();

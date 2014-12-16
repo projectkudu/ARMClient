@@ -10,7 +10,7 @@ namespace ARMClient.Authentication
         Task AcquireTokens();
         Task<AuthenticationResult> GetTokenByTenant(string tenantId);
         Task<AuthenticationResult> GetTokenBySubscription(string subscriptionId);
-        AuthenticationResult GetTokenBySpn(string tenantId, string appId, string appKey, AzureEnvironments env);
+        Task<AuthenticationResult> GetTokenBySpn(string tenantId, string appId, string appKey);
         Task<AuthenticationResult> GetRecentToken();
         Task<string> GetAuthorizationHeader(string subscriptionId);
         bool IsCacheValid();

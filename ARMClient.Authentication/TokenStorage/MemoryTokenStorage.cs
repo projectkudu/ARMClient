@@ -13,21 +13,14 @@ namespace ARMClient.Authentication.TokenStorage
             return this._cache ?? new Dictionary<TokenCacheKey, string>();
         }
 
-        public bool TryGetRecentToken(out AuthenticationResult recentToken)
-        {
-            recentToken = null;
-            if (!string.IsNullOrEmpty(this._recentToken.RefreshToken) && this._recentToken.ExpiresOn <= DateTime.UtcNow)
-            {
-                return false;
-            }
-
-            recentToken = this._recentToken;
-            return true;
-        }
-
         public void SaveCache(Dictionary<TokenCacheKey, string> cache)
         {
             this._cache = cache;
+        }
+
+        public AuthenticationResult GetRecentToken()
+        {
+            return this._recentToken;
         }
 
         public void SaveRecentToken(AuthenticationResult authResult)
