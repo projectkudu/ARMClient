@@ -155,20 +155,19 @@ namespace ARMClient
         {
             parameters = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
+            string parameter = null;
             var ret = new List<string>();
             foreach (var arg in args)
             {
                 if (arg.StartsWith("-"))
                 {
-                    var index = arg.IndexOf(':');
-                    if (index < 0)
-                    {
-                        parameters.Add(arg, String.Empty);
-                    }
-                    else
-                    {
-                        parameters.Add(arg.Substring(0, index), arg.Substring(index + 1));
-                    }
+                    parameters[arg] = null;
+                    parameter = arg;
+                }
+                else if (parameter != null)
+                {
+                    parameters[parameter] = arg;
+                    parameter = null;
                 }
                 else
                 {
@@ -206,7 +205,7 @@ namespace ARMClient
 
             Console.WriteLine();
             Console.WriteLine("Call ARM api");
-            Console.WriteLine("    ARMClient.exe [get|post|put|delete] [url] (-content:<file>)");
+            Console.WriteLine("    ARMClient.exe [get|post|put|delete] [url] (-content <file>)");
 
             Console.WriteLine();
             Console.WriteLine("Copy token to clipboard");
