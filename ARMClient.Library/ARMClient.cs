@@ -86,10 +86,21 @@ namespace ARMClient.Library
             return true;
         }
 
+
+        public T Get<T>()
+        {
+            return Task.Run(() => GetAsync<T>()).Result;
+        }
+
         public async Task<T> GetAsync<T>()
         {
             var httpResponse = await InvokeAsyncDynamicMember("Get", Enumerable.Empty<object>().ToArray());
             return await httpResponse.Content.ReadAsAsync<T>();
+        }
+
+        public T Post<T>(params object[] args)
+        {
+            return Task.Run(() => PostAsync<T>(args)).Result;
         }
 
         public async Task<T> PostAsync<T>(params object[] args)
@@ -98,10 +109,20 @@ namespace ARMClient.Library
             return await httpResponse.Content.ReadAsAsync<T>();
         }
 
+        public T Put<T>(params object[] args)
+        {
+            return Task.Run(() => PutAsync<T>(args)).Result;
+        }
+
         public async Task<T> PutAsync<T>(params object[] args)
         {
             var httpResponse = await InvokeAsyncDynamicMember("Put", args);
             return await httpResponse.Content.ReadAsAsync<T>();
+        }
+
+        public T Delete<T>()
+        {
+            return Task.Run(() => DeleteAsync<T>()).Result;
         }
 
         public async Task<T> DeleteAsync<T>()
@@ -132,7 +153,7 @@ namespace ARMClient.Library
 
             object result = HttpInvoke(memberName, args);
 
-            return isAsync ? result : ((Task<HttpResponseMessage>)result).Result;
+            return isAsync ? result : Task.Run(() => (Task<HttpResponseMessage>)result).Result;
         }
 
         private async Task<HttpResponseMessage> InvokeAsyncDynamicMember(string memberName, object[] args)
