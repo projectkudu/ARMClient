@@ -345,7 +345,7 @@ namespace ARMClient
                 }
 
                 Guid subscription;
-                if (Guid.TryParse(paths[0], out subscription))
+                if (paths.Length > 0 && Guid.TryParse(paths[0], out subscription))
                 {
                     return subscription.ToString();
                 }
