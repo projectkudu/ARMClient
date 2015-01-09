@@ -358,17 +358,20 @@ namespace ARMClient.Authentication.AADAuthentication
                     continue;
                 }
 
-                try
-                {
-                    var details = await GetTenantDetail(result, tenantId);
-                    info.displayName = details.displayName;
-                    info.domain = details.verifiedDomains.First(d => d.@default).name;
-                    Trace.WriteLine(string.Format("User: {0}, Tenant: {1} {2} ({3})", result.UserInfo.UserId, tenantId, details.displayName, details.verifiedDomains.First(d => d.@default).name));
-                }
-                catch (Exception ex)
-                {
-                    Trace.WriteLine(string.Format("User: {0}, Tenant: {1} {2}", result.UserInfo.UserId, tenantId, ex.Message));
-                }
+                // blocked on Graph API failure
+                //try
+                //{
+                //    var details = await GetTenantDetail(result, tenantId);
+                //    info.displayName = details.displayName;
+                //    info.domain = details.verifiedDomains.First(d => d.@default).name;
+                //    Trace.WriteLine(string.Format("User: {0}, Tenant: {1} {2} ({3})", result.UserInfo.UserId, tenantId, details.displayName, details.verifiedDomains.First(d => d.@default).name));
+                //}
+                //catch (Exception ex)
+                //{
+                //    Trace.WriteLine(string.Format("User: {0}, Tenant: {1} {2}", result.UserInfo.UserId, tenantId, ex.Message));
+                //}
+
+                Trace.WriteLine(string.Format("User: {0}, Tenant: {1}", result.UserInfo.UserId, tenantId));
 
                 try
                 {
