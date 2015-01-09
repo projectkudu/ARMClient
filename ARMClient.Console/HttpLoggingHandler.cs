@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Linq;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
@@ -48,7 +49,10 @@ namespace ARMClient
                     Console.Write("{0}: ", header.Key);
                     if (_addOutputColor)
                         Console.ForegroundColor = headerValueColor;
-                    Console.WriteLine(String.Join("; ", header.Value));
+                    if (String.Equals("Authorization", header.Key))
+                        Console.WriteLine(header.Value.First().Substring(0, 20) + "...");
+                    else
+                        Console.WriteLine(String.Join("; ", header.Value));
                 }
                 finally
                 {

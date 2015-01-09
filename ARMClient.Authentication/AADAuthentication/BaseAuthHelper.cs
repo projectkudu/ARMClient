@@ -246,7 +246,8 @@ namespace ARMClient.Authentication.AADAuthentication
                     if (authResult.UserInfo != null)
                     {
                         var user = authResult.UserInfo.UserId;
-                        yield return string.Format("User: {0}, Tenant: {1} {2} ({3})", user, tenantId, details.displayName, details.domain);
+                        yield return string.Format("User: {0}, Tenant: {1}", user, tenantId);
+                        //yield return string.Format("User: {0}, Tenant: {1} {2} ({3})", user, tenantId, details.displayName, details.domain);
                     }
                     else
                     {

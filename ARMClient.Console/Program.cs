@@ -78,12 +78,12 @@ namespace ARMClient
 
                         var bearer = authResult.CreateAuthorizationHeader();
                         Clipboard.SetText(bearer);
-                        Console.WriteLine(bearer);
-                        Console.WriteLine();
+                        //Console.WriteLine(bearer);
+                        //Console.WriteLine();
                         DumpClaims(authResult.AccessToken);
                         Console.WriteLine();
-                        Console.WriteLine("Expires: " + authResult.ExpiresOn.ToLocalTime().ToString("o"));
-                        Console.WriteLine();
+                        //Console.WriteLine("Expires: " + authResult.ExpiresOn.ToLocalTime().ToString("o"));
+                        //Console.WriteLine();
                         Console.WriteLine("Token copied to clipboard successfully.");
                         return 0;
                     }
