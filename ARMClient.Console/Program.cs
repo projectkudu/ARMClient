@@ -129,13 +129,9 @@ namespace ARMClient
                                 authResult = persistentAuthHelper.GetTokenBySubscription(subscriptionId).Result;
                             }
 
-                            string content = null;
-                            string file = null;
-                            if (parameters.TryGetValue("-content", out file))
-                            {
-                                content = File.ReadAllText(file);
-                            }
+                            var content = ParseHttpContent(verb, parameters);
                             HttpInvoke(uri, authResult, verb, addOutputColor, content).Wait();
+
                             return 0;
                         }
                     }
@@ -205,7 +201,7 @@ namespace ARMClient
 
             Console.WriteLine();
             Console.WriteLine("Call ARM api");
-            Console.WriteLine("    ARMClient.exe [get|post|put|delete] [url] (-content <file>)");
+            Console.WriteLine("    ARMClient.exe [get|post|put|delete] [url] (-content <file|json>)");
 
             Console.WriteLine();
             Console.WriteLine("Copy token to clipboard");
@@ -224,7 +220,29 @@ namespace ARMClient
             Console.WriteLine("    ARMClient.exe clearcache");
         }
 
-        static async Task HttpInvoke(Uri uri, AuthenticationResult authResult, string verb, bool addOutputColor, string payload)
+        static HttpContent ParseHttpContent(string verb, Dictionary<string, string> parameters)
+        {
+            HttpContent httpContent = null;
+            if (String.Equals(verb, "post", StringComparison.OrdinalIgnoreCase)
+                || String.Equals(verb, "put", StringComparison.OrdinalIgnoreCase)
+                || String.Equals(verb, "patch", StringComparison.OrdinalIgnoreCase))
+            {
+                string content;
+                if (parameters.TryGetValue("-content", out content))
+                {
+                    if (File.Exists(content))
+                    {
+                        content = File.ReadAllText(content);
+                    }
+                }
+
+                httpContent = new StringContent(content ?? String.Empty, Encoding.UTF8, "application/json");
+            }
+
+            return httpContent;
+        }
+
+        static async Task HttpInvoke(Uri uri, AuthenticationResult authResult, string verb, bool addOutputColor, HttpContent content)
         {
             using (var client = new HttpClient(new HttpLoggingHandler(new HttpClientHandler(), addOutputColor)))
             {
@@ -248,11 +266,11 @@ namespace ARMClient
                 }
                 else if (String.Equals(verb, "post", StringComparison.OrdinalIgnoreCase))
                 {
-                    response = await client.PostAsync(uri, new StringContent(payload ?? String.Empty, Encoding.UTF8, "application/json"));
+                    response = await client.PostAsync(uri, content);
                 }
                 else if (String.Equals(verb, "put", StringComparison.OrdinalIgnoreCase))
                 {
-                    response = await client.PutAsync(uri, new StringContent(payload ?? String.Empty, Encoding.UTF8, "application/json"));
+                    response = await client.PutAsync(uri, content);
                 }
                 else
                 {
