@@ -28,6 +28,12 @@ namespace ARMClient.Authentication.AADAuthentication
             this.TenantStorage = tenantStorage;
         }
 
+        public AzureEnvironments AzureEnvironments
+        {
+            get { return this.EnvironmentStorage.GetSavedEnvironment(); }
+            set { this.EnvironmentStorage.SaveEnvironment(value); }
+        }
+
         public async Task AcquireTokens()
         {
             var tokenCache = new Dictionary<TokenCacheKey, string>();
@@ -212,11 +218,6 @@ namespace ARMClient.Authentication.AADAuthentication
             return this.TokenStorage.IsCacheValid() && this.TenantStorage.IsCacheValid() && this.EnvironmentStorage.IsCacheValid();
         }
 
-        public void SetEnvironment(AzureEnvironments azureEnvironment)
-        {
-            this.EnvironmentStorage.SaveEnvironment(azureEnvironment);
-        }
-
         public void ClearTokenCache()
         {
             this.TokenStorage.ClearCache();
@@ -274,7 +275,7 @@ namespace ARMClient.Authentication.AADAuthentication
             {
                 try
                 {
-                    var azureEnvironment = this.EnvironmentStorage.GetSavedEnvironment();
+                    var azureEnvironment = this.AzureEnvironments;
                     var authority = String.Format("{0}/{1}", Constants.AADLoginUrls[(int)azureEnvironment], tenantId);
                     var context = new AuthenticationContext(
                         authority: authority,
@@ -316,7 +317,7 @@ namespace ARMClient.Authentication.AADAuthentication
 
         protected AuthenticationResult GetAuthorizationResult(Dictionary<TokenCacheKey, string> tokenCache, string tenantId, string appId, string appKey)
         {
-            var azureEnvironment = this.EnvironmentStorage.GetSavedEnvironment();
+            var azureEnvironment = this.AzureEnvironments;
             var authority = String.Format("{0}/{1}", Constants.AADLoginUrls[(int)azureEnvironment], tenantId);
             var context = new AuthenticationContext(
                 authority: authority,
@@ -407,7 +408,7 @@ namespace ARMClient.Authentication.AADAuthentication
             {
                 client.DefaultRequestHeaders.Add("Authorization", authResult.CreateAuthorizationHeader());
 
-                var azureEnvironment = this.EnvironmentStorage.GetSavedEnvironment();
+                var azureEnvironment = this.AzureEnvironments;
                 var url = string.Format("{0}/tenants?api-version={1}", Constants.CSMUrls[(int)azureEnvironment], Constants.CSMApiVersion);
                 using (var response = await client.GetAsync(url))
                 {
@@ -445,7 +446,7 @@ namespace ARMClient.Authentication.AADAuthentication
             {
                 client.DefaultRequestHeaders.Add("Authorization", authResult.CreateAuthorizationHeader());
 
-                var azureEnvironment = this.EnvironmentStorage.GetSavedEnvironment();
+                var azureEnvironment = this.AzureEnvironments;
                 var url = string.Format("{0}/{1}/tenantDetails?api-version={2}", Constants.AADGraphUrls[(int)azureEnvironment], tenantId, Constants.AADGraphApiVersion);
                 using (var response = await client.GetAsync(url))
                 {
@@ -476,7 +477,7 @@ namespace ARMClient.Authentication.AADAuthentication
             {
                 client.DefaultRequestHeaders.Add("Authorization", authResult.CreateAuthorizationHeader());
 
-                var azureEnvironment = this.EnvironmentStorage.GetSavedEnvironment();
+                var azureEnvironment = this.AzureEnvironments;
                 var url = string.Format("{0}/subscriptions?api-version={1}", Constants.CSMUrls[(int)azureEnvironment], Constants.CSMApiVersion);
                 using (var response = await client.GetAsync(url))
                 {

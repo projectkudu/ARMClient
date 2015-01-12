@@ -1,7 +1,7 @@
 ﻿
 namespace ARMClient.Authentication
 {
-    internal class Constants
+    public static class Constants
     {
         public static string[] AADLoginUrls = new[]
         {

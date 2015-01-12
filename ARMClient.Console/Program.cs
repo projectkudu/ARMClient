@@ -32,7 +32,7 @@ namespace ARMClient
                         {
                             env = (AzureEnvironments)Enum.Parse(typeof(AzureEnvironments), args[1], ignoreCase: true);
                         }
-                        persistentAuthHelper.SetEnvironment(env);
+                        persistentAuthHelper.AzureEnvironments = env;
                         persistentAuthHelper.AcquireTokens().Wait();
                         return 0;
                     }
@@ -100,7 +100,7 @@ namespace ARMClient
                             string tenantId = Guid.Parse(args[1]).ToString();
                             string appId = Guid.Parse(args[2]).ToString();
                             string appKey = args[3];
-                            persistentAuthHelper.SetEnvironment(env);
+                            persistentAuthHelper.AzureEnvironments = env;
                             var authResult = persistentAuthHelper.GetTokenBySpn(tenantId, appId, appKey).Result;
                             return 0;
                         }
@@ -116,7 +116,9 @@ namespace ARMClient
                             args = ParseArguments(args, out parameters);
                             var addOutputColor = !parameters.ContainsKey("-nocolor");
                             var verb = args[0];
-                            var uri = new Uri(args[1]);
+                            var env = persistentAuthHelper.AzureEnvironments;
+                            var baseUri = new Uri(ARMClient.Authentication.Constants.CSMUrls[(int)env]);
+                            var uri = new Uri(baseUri, args[1]);
 
                             var subscriptionId = GetSubscription(uri);
                             AuthenticationResult authResult;
