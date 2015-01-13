@@ -1,8 +1,7 @@
-﻿using System.Configuration;
-
+﻿
 namespace ARMClient.Authentication
 {
-    internal class Constants
+    public static class Constants
     {
         public static string[] AADLoginUrls = new[]
         {
@@ -34,27 +33,10 @@ namespace ARMClient.Authentication
             "f8cdef31-a31e-4b4a-93e4-5f571e91255a"
         };
 
-        public const string AzureToolClientId = "1950a258-227b-4e31-a9cf-717495945fc2";
+        public const string AADTenantId = "common";
+        public const string AADClientId = "1950a258-227b-4e31-a9cf-717495945fc2";
+        public const string AADRedirectUri = "urn:ietf:wg:oauth:2.0:oob";
         public const string CSMApiVersion = "2014-01-01";
         public const string AADGraphApiVersion = "1.5";
-
-        private static string _aadTenantId;
-        private static string _aadClientId;
-        private static string _aadRedirectUri;
-
-        public static string AADTenantId
-        {
-            get { return _aadTenantId ?? (_aadTenantId = ConfigurationManager.AppSettings["AADTenantId"]); }
-        }
-
-        public static string AADClientId
-        {
-            get { return _aadClientId ?? (_aadClientId = ConfigurationManager.AppSettings["AADClientId"]); }
-        }
-
-        public static string AADRedirectUri
-        {
-            get { return _aadRedirectUri ?? (_aadRedirectUri = ConfigurationManager.AppSettings["AADRedirectUri"]); }
-        }
     }
 }
