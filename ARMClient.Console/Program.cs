@@ -2,11 +2,13 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Net.Http;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using ARMClient.Authentication;
 using ARMClient.Authentication.AADAuthentication;
 using ARMClient.Authentication.Contracts;
 using Microsoft.IdentityModel.Clients.ActiveDirectory;
@@ -25,50 +27,48 @@ namespace ARMClient
                 var persistentAuthHelper = new PersistentAuthHelper();
                 if (args.Length > 0)
                 {
-                    if (String.Equals(args[0], "login", StringComparison.OrdinalIgnoreCase))
+                    var _parameters = new CommandLineParameters(args);
+                    var verb = _parameters.Get(0, "verb");
+                    if (String.Equals(verb, "login", StringComparison.OrdinalIgnoreCase))
                     {
-                        var env = AzureEnvironments.Prod;
-                        if (args.Length > 1)
-                        {
-                            env = (AzureEnvironments)Enum.Parse(typeof(AzureEnvironments), args[1], ignoreCase: true);
-                        }
-                        persistentAuthHelper.AzureEnvironments = env;
+                        var env = _parameters.Get(1, requires: false);
+                        _parameters.ThrowIfUnknown();
+
+                        persistentAuthHelper.AzureEnvironments = env == null ? AzureEnvironments.Prod :
+                            (AzureEnvironments)Enum.Parse(typeof(AzureEnvironments), args[1], ignoreCase: true);
                         persistentAuthHelper.AcquireTokens().Wait();
                         return 0;
                     }
-                    else if (String.Equals(args[0], "listcache", StringComparison.OrdinalIgnoreCase))
+                    else if (String.Equals(verb, "listcache", StringComparison.OrdinalIgnoreCase))
                     {
+                        _parameters.ThrowIfUnknown();
+                        
+                        EnsureTokenCache(persistentAuthHelper);
+
                         foreach (var line in persistentAuthHelper.DumpTokenCache())
                         {
                             Console.WriteLine(line);
                         }
                         return 0;
                     }
-                    else if (String.Equals(args[0], "clearcache", StringComparison.OrdinalIgnoreCase))
+                    else if (String.Equals(verb, "clearcache", StringComparison.OrdinalIgnoreCase))
                     {
+                        _parameters.ThrowIfUnknown();
+                        
                         persistentAuthHelper.ClearTokenCache();
                         return 0;
                     }
-                    else if (String.Equals(args[0], "token", StringComparison.OrdinalIgnoreCase))
+                    else if (String.Equals(verb, "token", StringComparison.OrdinalIgnoreCase))
                     {
+                        var tenantId = _parameters.Get(1, requires: false);
+                        _parameters.ThrowIfUnknown();
+
+                        EnsureTokenCache(persistentAuthHelper);
+
                         AuthenticationResult authResult;
-                        if (args.Length >= 2)
+                        if (tenantId != null)
                         {
-                            string tenantId = Guid.Parse(args[1]).ToString();
-                            string user = null;
-                            AzureEnvironments? env = null;
-                            if (args.Length >= 3)
-                            {
-                                user = args[2].Contains("@") ? args[2] : null;
-                                env = user == null ? (AzureEnvironments?)Enum.Parse(typeof(AzureEnvironments), args[2], true) : null;
-
-                                if (args.Length >= 4)
-                                {
-                                    env = env ?? (AzureEnvironments)Enum.Parse(typeof(AzureEnvironments), args[3], true);
-                                    user = user ?? args[3];
-                                }
-                            }
-
+                            EnsureGuidFormat(tenantId);
                             authResult = persistentAuthHelper.GetTokenByTenant(tenantId).Result;
                         }
                         else
@@ -78,69 +78,73 @@ namespace ARMClient
 
                         var bearer = authResult.CreateAuthorizationHeader();
                         Clipboard.SetText(bearer);
-                        //Console.WriteLine(bearer);
-                        //Console.WriteLine();
                         DumpClaims(authResult.AccessToken);
                         Console.WriteLine();
-                        //Console.WriteLine("Expires: " + authResult.ExpiresOn.ToLocalTime().ToString("o"));
-                        //Console.WriteLine();
                         Console.WriteLine("Token copied to clipboard successfully.");
                         return 0;
                     }
-                    else if (String.Equals(args[0], "spn", StringComparison.OrdinalIgnoreCase))
+                    else if (String.Equals(verb, "spn", StringComparison.OrdinalIgnoreCase))
                     {
-                        if (args.Length >= 4)
-                        {
-                            AzureEnvironments env = AzureEnvironments.Prod;
-                            if (args.Length >= 5)
-                            {
-                                env = (AzureEnvironments)Enum.Parse(typeof(AzureEnvironments), args[4], ignoreCase: true);
-                            }
+                        var tenantId = _parameters.Get(1, keyName: "tenant");
+                        EnsureGuidFormat(tenantId);
+                        
+                        var appId = _parameters.Get(2, keyName: "appId");
+                        EnsureGuidFormat(appId);
 
-                            string tenantId = Guid.Parse(args[1]).ToString();
-                            string appId = Guid.Parse(args[2]).ToString();
-                            string appKey = args[3];
-                            persistentAuthHelper.AzureEnvironments = env;
-                            var authResult = persistentAuthHelper.GetTokenBySpn(tenantId, appId, appKey).Result;
-                            return 0;
-                        }
+                        var appKey = _parameters.Get(3, keyName: "appKey");
+                        var env = _parameters.Get(1, requires: false);
+                        _parameters.ThrowIfUnknown();
+
+                        persistentAuthHelper.AzureEnvironments = env == null ? AzureEnvironments.Prod :
+                            (AzureEnvironments)Enum.Parse(typeof(AzureEnvironments), args[1], ignoreCase: true);
+                        var authResult = persistentAuthHelper.GetTokenBySpn(tenantId, appId, appKey).Result;
+                        return 0;
                     }
-                    else if (String.Equals(args[0], "get", StringComparison.OrdinalIgnoreCase)
-                        || String.Equals(args[0], "delete", StringComparison.OrdinalIgnoreCase)
-                        || String.Equals(args[0], "put", StringComparison.OrdinalIgnoreCase)
-                        || String.Equals(args[0], "post", StringComparison.OrdinalIgnoreCase))
+                    else if (String.Equals(verb, "get", StringComparison.OrdinalIgnoreCase)
+                        || String.Equals(verb, "delete", StringComparison.OrdinalIgnoreCase)
+                        || String.Equals(verb, "put", StringComparison.OrdinalIgnoreCase)
+                        || String.Equals(verb, "post", StringComparison.OrdinalIgnoreCase))
                     {
-                        if (args.Length >= 2)
+                        var path = _parameters.Get(1, keyName: "url");
+                        var baseUri = new Uri(ARMClient.Authentication.Constants.CSMUrls[(int)AzureEnvironments.Prod]);
+                        var uri = new Uri(baseUri, path);
+
+                        // TODO: acquire token
+                        EnsureTokenCache(persistentAuthHelper);
+
+                        var env = persistentAuthHelper.AzureEnvironments;
+                        baseUri = new Uri(ARMClient.Authentication.Constants.CSMUrls[(int)env]);
+                        uri = new Uri(baseUri, path);
+                        var content = ParseHttpContent(verb, _parameters);
+                        var verbose = _parameters.Get("-verbose", requires: false) != null;
+                        _parameters.ThrowIfUnknown();
+
+                        var subscriptionId = GetSubscription(uri);
+                        AuthenticationResult authResult;
+                        if (String.IsNullOrEmpty(subscriptionId))
                         {
-                            Dictionary<string, string> parameters;
-                            args = ParseArguments(args, out parameters);
-                            var addOutputColor = !parameters.ContainsKey("-nocolor");
-                            var verb = args[0];
-                            var env = persistentAuthHelper.AzureEnvironments;
-                            var baseUri = new Uri(ARMClient.Authentication.Constants.CSMUrls[(int)env]);
-                            var uri = new Uri(baseUri, args[1]);
-
-                            var subscriptionId = GetSubscription(uri);
-                            AuthenticationResult authResult;
-                            if (String.IsNullOrEmpty(subscriptionId))
-                            {
-                                authResult = persistentAuthHelper.GetRecentToken().Result;
-                            }
-                            else
-                            {
-                                authResult = persistentAuthHelper.GetTokenBySubscription(subscriptionId).Result;
-                            }
-
-                            var content = ParseHttpContent(verb, parameters);
-                            HttpInvoke(uri, authResult, verb, addOutputColor, content).Wait();
-
-                            return 0;
+                            authResult = persistentAuthHelper.GetRecentToken().Result;
                         }
+                        else
+                        {
+                            authResult = persistentAuthHelper.GetTokenBySubscription(subscriptionId).Result;
+                        }
+
+                        return HttpInvoke(uri, authResult, verb, verbose, content).Result;
+                    }
+                    else
+                    {
+                        throw new CommandLineException(String.Format("Parameter '{0}' is invalid!", verb));
                     }
                 }
 
                 PrintUsage();
                 return 1;
+            }
+            catch (CommandLineException ex)
+            {
+                Console.WriteLine(ex.Message);
+                return -1;
             }
             catch (Exception ex)
             {
@@ -149,31 +153,21 @@ namespace ARMClient
             }
         }
 
-        static string[] ParseArguments(string[] args, out Dictionary<string, string> parameters)
+        static void EnsureGuidFormat(string parameter)
         {
-            parameters = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-
-            string parameter = null;
-            var ret = new List<string>();
-            foreach (var arg in args)
+            Guid result;
+            if (!Guid.TryParse(parameter, out result))
             {
-                if (arg.StartsWith("-"))
-                {
-                    parameters[arg] = null;
-                    parameter = arg;
-                }
-                else if (parameter != null)
-                {
-                    parameters[parameter] = arg;
-                    parameter = null;
-                }
-                else
-                {
-                    ret.Add(arg);
-                }
+                throw new CommandLineException(String.Format("Parameter '{0}' is not a valid guid!", parameter));
             }
+        }
 
-            return ret.ToArray();
+        static void EnsureTokenCache(PersistentAuthHelper persistentAuthHelper)
+        {
+            if (!persistentAuthHelper.IsCacheValid())
+            {
+                throw new CommandLineException("There is no login token.  Please login to acquire token.");
+            }
         }
 
         static void DumpClaims(string accessToken)
@@ -203,7 +197,7 @@ namespace ARMClient
 
             Console.WriteLine();
             Console.WriteLine("Call ARM api");
-            Console.WriteLine("    ARMClient.exe [get|post|put|delete] [url] (-content <file|json>)");
+            Console.WriteLine("    ARMClient.exe [get|post|put|delete] [url] (-data <@file|json>) (-verbose)");
 
             Console.WriteLine();
             Console.WriteLine("Copy token to clipboard");
@@ -222,31 +216,31 @@ namespace ARMClient
             Console.WriteLine("    ARMClient.exe clearcache");
         }
 
-        static HttpContent ParseHttpContent(string verb, Dictionary<string, string> parameters)
+        static HttpContent ParseHttpContent(string verb, CommandLineParameters parameters)
         {
-            HttpContent httpContent = null;
             if (String.Equals(verb, "post", StringComparison.OrdinalIgnoreCase)
                 || String.Equals(verb, "put", StringComparison.OrdinalIgnoreCase)
                 || String.Equals(verb, "patch", StringComparison.OrdinalIgnoreCase))
             {
-                string content;
-                if (parameters.TryGetValue("-content", out content))
+                string data = parameters.Get("-data", requires: false);
+                if (data == null)
                 {
-                    if (File.Exists(content))
-                    {
-                        content = File.ReadAllText(content);
-                    }
+                    return new StringContent(String.Empty, Encoding.UTF8, "application/json");
                 }
 
-                httpContent = new StringContent(content ?? String.Empty, Encoding.UTF8, "application/json");
-            }
+                if (data.StartsWith("@"))
+                {
+                    data = File.ReadAllText(data.Substring(1));
+                }
 
-            return httpContent;
+                return new StringContent(data, Encoding.UTF8, "application/json");
+            }
+            return null;
         }
 
-        static async Task HttpInvoke(Uri uri, AuthenticationResult authResult, string verb, bool addOutputColor, HttpContent content)
+        static async Task<int> HttpInvoke(Uri uri, AuthenticationResult authResult, string verb, bool verbose, HttpContent content)
         {
-            using (var client = new HttpClient(new HttpLoggingHandler(new HttpClientHandler(), addOutputColor)))
+            using (var client = new HttpClient(new HttpLoggingHandler(new HttpClientHandler(), verbose)))
             {
                 client.DefaultRequestHeaders.Add("Authorization", authResult.CreateAuthorizationHeader());
                 client.DefaultRequestHeaders.Add("User-Agent", "ARMClient-" + Environment.MachineName);
@@ -279,7 +273,15 @@ namespace ARMClient
                     throw new InvalidOperationException(String.Format("Invalid http verb {0}!", verb));
                 }
 
-                response.Dispose();
+                using (response)
+                {
+                    if (response.IsSuccessStatusCode)
+                    {
+                        return 0;
+                    }
+
+                    return (-1) * (int)response.StatusCode;
+                }
             }
         }
 
@@ -337,16 +339,14 @@ namespace ARMClient
 
         static bool IsRdfe(Uri uri)
         {
-            return uri.Host == "umapinext.rdfetest.dnsdemo4.com"
-                || uri.Host == "umapi.rdfetest.dnsdemo4.com"
-                || uri.Host == "umapi-preview.core.windows-int.net"
-                || uri.Host == "management.core.windows.net";
+            var host = uri.Host;
+            return Constants.RdfeUrls.Any(url => url.IndexOf(host, StringComparison.OrdinalIgnoreCase) > 0);
         }
 
         static bool IsGraphApi(Uri uri)
         {
-            return uri.Host == "graph.ppe.windows.net"
-                || uri.Host == "graph.windows.net";
+            var host = uri.Host;
+            return Constants.AADGraphUrls.Any(url => url.IndexOf(host, StringComparison.OrdinalIgnoreCase) > 0);
         }
 
         static string GetSubscription(Uri uri)
@@ -376,6 +376,48 @@ namespace ARMClient
             {
                 throw new InvalidOperationException(String.Format("Invalid url {0}!", uri), ex);
             }
+        }
+
+        static AzureEnvironments GetAzureEnvironments(Uri uri)
+        {
+            var host = uri.Host;
+            for (int i = 0; i < Constants.AADGraphUrls.Length; ++i)
+            {
+                var url = Constants.AADGraphUrls[i];
+                if (url.IndexOf(host, StringComparison.OrdinalIgnoreCase) > 0)
+                {
+                    return (AzureEnvironments)i;
+                }
+            }
+
+            for (int i = 0; i < Constants.CSMUrls.Length; ++i)
+            {
+                var url = Constants.CSMUrls[i];
+                if (url.IndexOf(host, StringComparison.OrdinalIgnoreCase) > 0)
+                {
+                    return (AzureEnvironments)i;
+                }
+            }
+
+            for (int i = 0; i < Constants.RdfeUrls.Length; ++i)
+            {
+                var url = Constants.RdfeUrls[i];
+                if (url.IndexOf(host, StringComparison.OrdinalIgnoreCase) > 0)
+                {
+                    return (AzureEnvironments)i;
+                }
+            }
+
+            for (int i = 0; i < Constants.SCMSuffixes.Length; ++i)
+            {
+                var suffix = Constants.SCMSuffixes[i];
+                if (host.IndexOf(suffix, StringComparison.OrdinalIgnoreCase) > 0)
+                {
+                    return (AzureEnvironments)i;
+                }
+            }
+
+            return AzureEnvironments.Prod;
         }
     }
 }

@@ -27,6 +27,22 @@ namespace ARMClient.Authentication
             "https://management.azure.com"
         };
 
+        public static string[] RdfeUrls = new[]
+        {
+            "https://umapinext.rdfetest.dnsdemo4.com",
+            "https://umapi.rdfetest.dnsdemo4.com",
+            "https://umapi-preview.core.windows-int.net",
+            "https://management.core.windows.net"
+        };
+
+        public static string[] SCMSuffixes = new[]
+        {
+            ".scm.antares-int.windows-int.net",
+            ".scm.antdir0.antares-test.windows-int.net",
+            ".scm.ant-intapp.windows-int.net",
+            ".scm.azurewebsites.net"
+        };
+
         public static string[] InfrastructureTenantIds = new[]
         {
             "ea8a4392-515e-481f-879e-6571ff2a8a36",
