@@ -22,7 +22,7 @@ namespace ARMClient
                 if (arg.StartsWith("-"))
                 {
                     // '-' can't be the first parameter
-                    if (index <= 0)
+                    if (index == 0)
                     {
                         throw new CommandLineException(String.Format("Parameter '{0}' is invalid!", arg));
                     }
