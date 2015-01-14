@@ -87,7 +87,7 @@ namespace ARMClient.Authentication.AADAuthentication
             {
                 foreach (var authResult in authResults)
                 {
-                    Console.WriteLine(authResult.UserInfo.UserId);
+                    Trace.WriteLine(authResult.UserInfo.UserId);
                 }
 
                 throw new InvalidOperationException("Multiple users found.  Please specify user argument!");
@@ -131,10 +131,10 @@ namespace ARMClient.Authentication.AADAuthentication
                 tenantId = tenantId
             };
 
-            Console.WriteLine("App: {0}, Tenant: {1}", appId, tenantId);
+            Trace.WriteLine(String.Format("App: {0}, Tenant: {1}", appId, tenantId));
 
             var subscriptions = await GetSubscriptions(authResult);
-            Console.WriteLine("\tThere are {0} subscriptions", subscriptions.Length);
+            Trace.WriteLine(String.Format("\tThere are {0} subscriptions", subscriptions.Length));
 
             info.subscriptions = subscriptions.Select(subscription => new SubscriptionCacheInfo
             {
@@ -144,7 +144,7 @@ namespace ARMClient.Authentication.AADAuthentication
 
             foreach (var subscription in subscriptions)
             {
-                Console.WriteLine("\tSubscription {0} ({1})", subscription.subscriptionId, subscription.displayName);
+                Trace.WriteLine(String.Format("\tSubscription {0} ({1})", subscription.subscriptionId, subscription.displayName));
             }
 
             tenantCache[tenantId] = info;
@@ -336,7 +336,7 @@ namespace ARMClient.Authentication.AADAuthentication
         protected async Task<Dictionary<string, TenantCacheInfo>> GetTokenForTenants(Dictionary<TokenCacheKey, string> tokenCache, AuthenticationResult authResult)
         {
             var tenantIds = await GetTenantIds(authResult);
-            Console.WriteLine("User {0} belongs to {1} tenants", authResult.UserInfo.UserId, tenantIds.Length);
+            Trace.WriteLine(string.Format("User {0} belongs to {1} tenants", authResult.UserInfo.UserId, tenantIds.Length));
 
             var tenantCache = this.TenantStorage.GetCache();
             foreach (var tenantId in tenantIds)

@@ -10,12 +10,12 @@ namespace ARMClient
 {
     class HttpLoggingHandler : DelegatingHandler
     {
-        private readonly bool _addOutputColor;
+        private readonly bool _verbose;
 
-        public HttpLoggingHandler(HttpMessageHandler innerHandler, bool addOutputColor)
+        public HttpLoggingHandler(HttpMessageHandler innerHandler, bool verbose)
             : base(innerHandler)
         {
-            _addOutputColor = addOutputColor;
+            _verbose = verbose;
         }
 
         protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
@@ -25,84 +25,88 @@ namespace ARMClient
             const ConsoleColor successColor = ConsoleColor.Green;
             const ConsoleColor failureColor = ConsoleColor.Red;
 
-            ConsoleColor originalColor;
-            Console.WriteLine("---------- Request -----------------------");
-            Console.WriteLine();
-            originalColor = Console.ForegroundColor;
-            try
+            ConsoleColor originalColor = Console.ForegroundColor;
+            if (_verbose)
             {
-                if (_addOutputColor)
-                    Console.ForegroundColor = headerNameColor;
-                Console.WriteLine("{0} {1} HTTP/{2}", request.Method, request.RequestUri.PathAndQuery, request.Version);
-            }
-            finally
-            {
-                Console.ForegroundColor = originalColor;
-            }
-            foreach (var header in request.Headers)
-            {
-                originalColor = Console.ForegroundColor;
+                Console.WriteLine("---------- Request -----------------------");
+                Console.WriteLine();
                 try
                 {
-                    if (_addOutputColor)
-                        Console.ForegroundColor = headerNameColor;
-                    Console.Write("{0}: ", header.Key);
-                    if (_addOutputColor)
-                        Console.ForegroundColor = headerValueColor;
-                    if (String.Equals("Authorization", header.Key))
-                        Console.WriteLine(header.Value.First().Substring(0, 20) + "...");
-                    else
-                        Console.WriteLine(String.Join("; ", header.Value));
+                    Console.ForegroundColor = headerNameColor;
+                    Console.WriteLine("{0} {1} HTTP/{2}", request.Method, request.RequestUri.PathAndQuery, request.Version);
                 }
                 finally
                 {
                     Console.ForegroundColor = originalColor;
                 }
+                foreach (var header in request.Headers)
+                {
+                    originalColor = Console.ForegroundColor;
+                    try
+                    {
+                        Console.ForegroundColor = headerNameColor;
+                        Console.Write("{0}: ", header.Key);
+                        Console.ForegroundColor = headerValueColor;
+                        if (String.Equals("Authorization", header.Key))
+                            Console.WriteLine(header.Value.First().Substring(0, 20) + "...");
+                        else
+                            Console.WriteLine(String.Join("; ", header.Value));
+                    }
+                    finally
+                    {
+                        Console.ForegroundColor = originalColor;
+                    }
+                }
+                Console.WriteLine();
+                await DumpContent(request.Content);
+                Console.WriteLine();
             }
-            Console.WriteLine();
-            await DumpContent(request.Content);
-            Console.WriteLine();
 
             var watch = new Stopwatch();
             watch.Start();
             HttpResponseMessage response = await base.SendAsync(request, cancellationToken);
             watch.Stop();
 
-            Console.WriteLine("---------- Response ({0} ms) -----------", watch.ElapsedMilliseconds);
-            Console.WriteLine();
+            if (_verbose)
+            {
+                Console.WriteLine("---------- Response ({0} ms) ------------", watch.ElapsedMilliseconds);
+                Console.WriteLine();
 
-            originalColor = Console.ForegroundColor;
-            try
-            {
-                if (_addOutputColor)
-                    Console.ForegroundColor = response.IsSuccessStatusCode ? successColor : failureColor;
-                Console.WriteLine("HTTP/{0} {1} {2}", response.Version, (int)response.StatusCode, response.StatusCode);
-            }
-            finally
-            {
-                Console.ForegroundColor = originalColor;
-            }
-
-            foreach (var header in response.Headers)
-            {
                 originalColor = Console.ForegroundColor;
                 try
                 {
-                    if (_addOutputColor)
-                        Console.ForegroundColor = headerNameColor;
-                    Console.Write("{0}: ", header.Key);
-                    if (_addOutputColor)
-                        Console.ForegroundColor = headerValueColor;
-                    Console.WriteLine(String.Join("; ", header.Value));
+                    Console.ForegroundColor = response.IsSuccessStatusCode ? successColor : failureColor;
+                    Console.WriteLine("HTTP/{0} {1} {2}", response.Version, (int)response.StatusCode, response.StatusCode);
                 }
                 finally
                 {
                     Console.ForegroundColor = originalColor;
                 }
+
+                foreach (var header in response.Headers)
+                {
+                    originalColor = Console.ForegroundColor;
+                    try
+                    {
+                        Console.ForegroundColor = headerNameColor;
+                        Console.Write("{0}: ", header.Key);
+                        Console.ForegroundColor = headerValueColor;
+                        Console.WriteLine(String.Join("; ", header.Value));
+                    }
+                    finally
+                    {
+                        Console.ForegroundColor = originalColor;
+                    }
+                }
+                Console.WriteLine();
             }
-            Console.WriteLine();
+
             await DumpContent(response.Content);
-            Console.WriteLine();
+
+            if (_verbose)
+            {
+                Console.WriteLine();
+            }
 
             return response;
         }
@@ -115,39 +119,21 @@ namespace ARMClient
             }
 
             var result = await content.ReadAsStringAsync();
-            if (content.Headers.ContentType.MediaType.Contains("application/json"))
+            if (_verbose && content.Headers.ContentType.MediaType.Contains("application/json"))
             {
                 if (result.StartsWith("["))
                 {
-                    if (_addOutputColor)
-                    {
-                        Program.PrintColoredJson(JArray.Parse(result));
-                    }
-                    else
-                    {
-                        Console.WriteLine(JArray.Parse(result));
-                    }
+                    Program.PrintColoredJson(JArray.Parse(result));
+                    return;
                 }
                 else if (result.StartsWith("{"))
                 {
-                    if (_addOutputColor)
-                    {
-                        Program.PrintColoredJson(JObject.Parse(result));
-                    }
-                    else
-                    {
-                        Console.WriteLine(JObject.Parse(result));
-                    }
-                }
-                else
-                {
-                    Console.WriteLine(result);
+                    Program.PrintColoredJson(JObject.Parse(result));
+                    return;
                 }
             }
-            else
-            {
-                Console.WriteLine(result);
-            }
+
+            Console.Write(result);
         }
     }
 }

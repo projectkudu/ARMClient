@@ -6,21 +6,21 @@ ARMClient facilitates getting token and ARM resource access.  The simplest use c
 Check out [wiki](https://github.com/projectkudu/ARMClient/wiki) for more details.
 
     Login and get tokens
-        ARMClient.exe login ([Prod|Current|Dogfood|Next])
+        ARMClient.exe login
     
     Call ARM api
-        ARMClient.exe [get|post|put|delete] [url] ([user])
+        ARMClient.exe [get|post|put|delete] [url] (-data <@file|json>) (-verbose)
     
     Copy token to clipboard
-        ARMClient.exe token [tenant] ([user])
+        ARMClient.exe token [tenant|subscription]
     
     List token cache
-        ARMClient.exe listcache ([Prod|Current|Dogfood|Next])
+        ARMClient.exe listcache
     
     Clear token cache
-        ARMClient.exe clearcache ([Prod|Current|Dogfood|Next])
+        ARMClient.exe clearcache
 
-Note: The tokens are cached at `%USERPROFILE%\.csm` folder.  
+Note: The tokens are cached at `%USERPROFILE%\.arm` folder.  All files are encrypted with CurrentUser ProtectData .NET api.  
 
 ARMClient.Library.ARMClient
 ============================
