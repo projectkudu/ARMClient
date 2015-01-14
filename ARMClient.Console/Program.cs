@@ -106,17 +106,25 @@ namespace ARMClient
                         || String.Equals(verb, "post", StringComparison.OrdinalIgnoreCase))
                     {
                         var path = _parameters.Get(1, keyName: "url");
+                        var verbose = _parameters.Get("-verbose", requires: false) != null;
                         var baseUri = new Uri(ARMClient.Authentication.Constants.CSMUrls[(int)AzureEnvironments.Prod]);
                         var uri = new Uri(baseUri, path);
 
-                        // TODO: acquire token
-                        EnsureTokenCache(persistentAuthHelper);
+                        if (!verbose)
+                        {
+                            Trace.Listeners.Clear();
+                        }
+
+                        if (!persistentAuthHelper.IsCacheValid())
+                        {
+                            persistentAuthHelper.AzureEnvironments = GetAzureEnvironments(uri);
+                            persistentAuthHelper.AcquireTokens().Wait();
+                        }
 
                         var env = persistentAuthHelper.AzureEnvironments;
                         baseUri = new Uri(ARMClient.Authentication.Constants.CSMUrls[(int)env]);
                         uri = new Uri(baseUri, path);
                         var content = ParseHttpContent(verb, _parameters);
-                        var verbose = _parameters.Get("-verbose", requires: false) != null;
                         _parameters.ThrowIfUnknown();
 
                         var subscriptionId = GetSubscription(uri);
@@ -141,14 +149,9 @@ namespace ARMClient
                 PrintUsage();
                 return 1;
             }
-            catch (CommandLineException ex)
-            {
-                Console.WriteLine(ex.Message);
-                return -1;
-            }
             catch (Exception ex)
             {
-                Console.WriteLine(ex);
+                Console.WriteLine(ex.GetBaseException().Message);
                 return -1;
             }
         }

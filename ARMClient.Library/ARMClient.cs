@@ -166,7 +166,7 @@ namespace ARMClient.Library
             using (var client = new HttpClient(new HttpClientHandler()))
             {
                 client.DefaultRequestHeaders.Add("Authorization", this._authorizationHeader);
-                client.DefaultRequestHeaders.Add("User-Agent", "CSMClient-" + Environment.MachineName);
+                client.DefaultRequestHeaders.Add("User-Agent", "ARMClient-" + Environment.MachineName);
                 client.DefaultRequestHeaders.Add("Accept", "application/json");
 
                 HttpResponseMessage response = null;
