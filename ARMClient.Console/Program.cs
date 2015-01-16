@@ -215,7 +215,7 @@ namespace ARMClient
 
             Console.WriteLine();
             Console.WriteLine("Call ARM api");
-            Console.WriteLine("    ARMClient.exe [get|post|put|delete] [url] (-data <@file|json>) (-verbose)");
+            Console.WriteLine("    ARMClient.exe [get|post|put|delete] [url] (<@file|content>) (-verbose)");
 
             Console.WriteLine();
             Console.WriteLine("Copy token to clipboard");
@@ -242,7 +242,7 @@ namespace ARMClient
 
             if (requiresData || String.Equals(verb, "post", StringComparison.OrdinalIgnoreCase))
             {
-                string data = parameters.Get("-data", requires: requiresData && !inputRedirected);
+                string data = parameters.Get("2", "content", requires: requiresData && !inputRedirected);
                 if (data == null)
                 {
                     if (inputRedirected)
