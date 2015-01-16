@@ -221,14 +221,21 @@ namespace ARMClient
 
         static HttpContent ParseHttpContent(string verb, CommandLineParameters parameters)
         {
-            if (String.Equals(verb, "post", StringComparison.OrdinalIgnoreCase)
-                || String.Equals(verb, "put", StringComparison.OrdinalIgnoreCase)
-                || String.Equals(verb, "patch", StringComparison.OrdinalIgnoreCase))
+            bool requiresData = String.Equals(verb, "put", StringComparison.OrdinalIgnoreCase)
+                        || String.Equals(verb, "patch", StringComparison.OrdinalIgnoreCase);
+            bool inputRedirected = Console.IsInputRedirected;
+
+            if (requiresData || String.Equals(verb, "post", StringComparison.OrdinalIgnoreCase))
             {
-                string data = parameters.Get("-data", requires: false);
+                string data = parameters.Get("-data", requires: requiresData && !inputRedirected);
                 if (data == null)
                 {
-                    return new StringContent(String.Empty, Encoding.UTF8, "application/json");
+                    if (inputRedirected)
+                    {
+                        return new StringContent(Console.In.ReadToEnd(), Encoding.UTF8, Constants.JsonContentType);
+                    }
+
+                    return new StringContent(String.Empty, Encoding.UTF8, Constants.JsonContentType);
                 }
 
                 if (data.StartsWith("@"))
@@ -236,7 +243,7 @@ namespace ARMClient
                     data = File.ReadAllText(data.Substring(1));
                 }
 
-                return new StringContent(data, Encoding.UTF8, "application/json");
+                return new StringContent(data, Encoding.UTF8, Constants.JsonContentType);
             }
             return null;
         }
@@ -246,8 +253,8 @@ namespace ARMClient
             using (var client = new HttpClient(new HttpLoggingHandler(new HttpClientHandler(), verbose)))
             {
                 client.DefaultRequestHeaders.Add("Authorization", authResult.CreateAuthorizationHeader());
-                client.DefaultRequestHeaders.Add("User-Agent", "ARMClient-" + Environment.MachineName);
-                client.DefaultRequestHeaders.Add("Accept", "application/json");
+                client.DefaultRequestHeaders.Add("User-Agent", Constants.UserAgent.Value);
+                client.DefaultRequestHeaders.Add("Accept", Constants.JsonContentType);
 
                 if (IsRdfe(uri))
                 {
