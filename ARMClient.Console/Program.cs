@@ -151,7 +151,7 @@ namespace ARMClient
             }
             catch (Exception ex)
             {
-                Console.WriteLine(ex.GetBaseException().Message);
+                DumpException(ex);
                 return -1;
             }
         }
@@ -187,6 +187,20 @@ namespace ARMClient
             var json = Encoding.UTF8.GetString(Convert.FromBase64String(base64));
             PrintColoredJson(JObject.Parse(json));
             Console.WriteLine();
+        }
+
+        static void DumpException(Exception ex)
+        {
+            if (ex.InnerException != null)
+            {
+                DumpException(ex.InnerException);
+            }
+
+            // Aggregate exceptions themselves don't have interesting messages
+            if (!(ex is AggregateException))
+            {
+                Console.WriteLine(ex.Message);
+            }
         }
 
         static void PrintUsage()
