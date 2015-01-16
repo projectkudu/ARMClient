@@ -191,8 +191,9 @@ namespace ARMClient
 
         static void PrintUsage()
         {
-            Console.WriteLine("ARMClient supports getting token and simple Http ARM resources.");
-            Console.WriteLine("Source codes are available at https://github.com/projectkudu/ARMClient.");
+            Console.WriteLine(@"ARMClient version {0}", typeof(Program).Assembly.GetName().Version);
+            Console.WriteLine("A simple tool to invoke the Azure Resource Manager API");
+            Console.WriteLine("Source code is available on https://github.com/projectkudu/ARMClient.");
 
             Console.WriteLine();
             Console.WriteLine("Login and get tokens");
