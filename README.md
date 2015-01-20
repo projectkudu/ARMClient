@@ -1,7 +1,7 @@
 ARMClient
 =========
 
-ARMClient facilitates getting token and ARM resource access.  The simplest use case is to acquire token `ARMClient.exe login` and http GET CSM resource such as `ARMClient.exe get https://management.azure.com/subscriptions?api-version=2014-04-01`
+ARMClient facilitates getting token and ARM resource access.  The simplest use case is to acquire token `ARMClient.exe login` and http GET ARM resource such as `ARMClient.exe get /subscriptions?api-version=2014-04-01`
 
 Check out [wiki](https://github.com/projectkudu/ARMClient/wiki) for more details.
 
@@ -68,8 +68,11 @@ public class Site
 
 ```
 
-The make up of the call is similar to the way CSM Urls are constructed. For example if the Url looks like this
+The make up of the call is similar to the way ARM Urls are constructed. For example if the Url looks like this
 `https://management.azure.com/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{webSiteName}/slots/{slotName}/config/web`
+
+Note that you can omit the hostname, and simply have:
+`/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{webSiteName}/slots/{slotName}/config/web`
 
 then the `ARMClient` call will be `.Subscriptions["{subscriptionId}"].ResourceGroups["{resourceGroupName}"].Providers["Microsoft.Web"].Sites["{webSiteName}"].Slots["{slotName}"].Config["web"]`
 
