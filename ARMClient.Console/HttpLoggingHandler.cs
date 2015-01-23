@@ -4,6 +4,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
+using ARMClient.Authentication;
 using Newtonsoft.Json.Linq;
 
 namespace ARMClient
@@ -119,7 +120,7 @@ namespace ARMClient
             }
 
             var result = await content.ReadAsStringAsync();
-            if (_verbose && content.Headers.ContentType.MediaType.Contains("application/json"))
+            if (content.Headers.ContentType.MediaType.Contains(Constants.JsonContentType))
             {
                 if (result.StartsWith("["))
                 {

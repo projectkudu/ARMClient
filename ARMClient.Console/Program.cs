@@ -151,7 +151,7 @@ namespace ARMClient
             }
             catch (Exception ex)
             {
-                Console.WriteLine(ex.GetBaseException().Message);
+                DumpException(ex);
                 return -1;
             }
         }
@@ -189,10 +189,25 @@ namespace ARMClient
             Console.WriteLine();
         }
 
+        static void DumpException(Exception ex)
+        {
+            if (ex.InnerException != null)
+            {
+                DumpException(ex.InnerException);
+            }
+
+            // Aggregate exceptions themselves don't have interesting messages
+            if (!(ex is AggregateException))
+            {
+                Console.WriteLine(ex.Message);
+            }
+        }
+
         static void PrintUsage()
         {
-            Console.WriteLine("ARMClient supports getting token and simple Http ARM resources.");
-            Console.WriteLine("Source codes are available at https://github.com/projectkudu/ARMClient.");
+            Console.WriteLine(@"ARMClient version {0}", typeof(Program).Assembly.GetName().Version);
+            Console.WriteLine("A simple tool to invoke the Azure Resource Manager API");
+            Console.WriteLine("Source code is available on https://github.com/projectkudu/ARMClient.");
 
             Console.WriteLine();
             Console.WriteLine("Login and get tokens");
@@ -200,7 +215,7 @@ namespace ARMClient
 
             Console.WriteLine();
             Console.WriteLine("Call ARM api");
-            Console.WriteLine("    ARMClient.exe [get|post|put|delete] [url] (-data <@file|json>) (-verbose)");
+            Console.WriteLine("    ARMClient.exe [get|post|put|delete] [url] (<@file|content>) (-verbose)");
 
             Console.WriteLine();
             Console.WriteLine("Copy token to clipboard");
@@ -221,14 +236,21 @@ namespace ARMClient
 
         static HttpContent ParseHttpContent(string verb, CommandLineParameters parameters)
         {
-            if (String.Equals(verb, "post", StringComparison.OrdinalIgnoreCase)
-                || String.Equals(verb, "put", StringComparison.OrdinalIgnoreCase)
-                || String.Equals(verb, "patch", StringComparison.OrdinalIgnoreCase))
+            bool requiresData = String.Equals(verb, "put", StringComparison.OrdinalIgnoreCase)
+                        || String.Equals(verb, "patch", StringComparison.OrdinalIgnoreCase);
+            bool inputRedirected = Console.IsInputRedirected;
+
+            if (requiresData || String.Equals(verb, "post", StringComparison.OrdinalIgnoreCase))
             {
-                string data = parameters.Get("-data", requires: false);
+                string data = parameters.Get("2", "content", requires: requiresData && !inputRedirected);
                 if (data == null)
                 {
-                    return new StringContent(String.Empty, Encoding.UTF8, "application/json");
+                    if (inputRedirected)
+                    {
+                        return new StringContent(Console.In.ReadToEnd(), Encoding.UTF8, Constants.JsonContentType);
+                    }
+
+                    return new StringContent(String.Empty, Encoding.UTF8, Constants.JsonContentType);
                 }
 
                 if (data.StartsWith("@"))
@@ -236,7 +258,7 @@ namespace ARMClient
                     data = File.ReadAllText(data.Substring(1));
                 }
 
-                return new StringContent(data, Encoding.UTF8, "application/json");
+                return new StringContent(data, Encoding.UTF8, Constants.JsonContentType);
             }
             return null;
         }
@@ -246,8 +268,8 @@ namespace ARMClient
             using (var client = new HttpClient(new HttpLoggingHandler(new HttpClientHandler(), verbose)))
             {
                 client.DefaultRequestHeaders.Add("Authorization", authResult.CreateAuthorizationHeader());
-                client.DefaultRequestHeaders.Add("User-Agent", "ARMClient-" + Environment.MachineName);
-                client.DefaultRequestHeaders.Add("Accept", "application/json");
+                client.DefaultRequestHeaders.Add("User-Agent", Constants.UserAgent.Value);
+                client.DefaultRequestHeaders.Add("Accept", Constants.JsonContentType);
 
                 if (IsRdfe(uri))
                 {

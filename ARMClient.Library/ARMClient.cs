@@ -187,8 +187,8 @@ namespace ARMClient.Library
             using (var client = new HttpClient(new HttpClientHandler()))
             {
                 client.DefaultRequestHeaders.Add("Authorization", this._authorizationHeader);
-                client.DefaultRequestHeaders.Add("User-Agent", "ARMClient-" + Environment.MachineName);
-                client.DefaultRequestHeaders.Add("Accept", "application/json");
+                client.DefaultRequestHeaders.Add("User-Agent", Constants.UserAgent.Value);
+                client.DefaultRequestHeaders.Add("Accept", Constants.JsonContentType);
 
                 HttpResponseMessage response = null;
                 if (String.Equals(verb, "get", StringComparison.OrdinalIgnoreCase))
@@ -201,11 +201,11 @@ namespace ARMClient.Library
                 }
                 else if (String.Equals(verb, "post", StringComparison.OrdinalIgnoreCase))
                 {
-                    response = await client.PostAsync(uri, new StringContent(payload ?? String.Empty, Encoding.UTF8, "application/json")).ConfigureAwait(false);
+                    response = await client.PostAsync(uri, new StringContent(payload ?? String.Empty, Encoding.UTF8, Constants.JsonContentType)).ConfigureAwait(false);
                 }
                 else if (String.Equals(verb, "put", StringComparison.OrdinalIgnoreCase))
                 {
-                    response = await client.PutAsync(uri, new StringContent(payload ?? String.Empty, Encoding.UTF8, "application/json")).ConfigureAwait(false);
+                    response = await client.PutAsync(uri, new StringContent(payload ?? String.Empty, Encoding.UTF8, Constants.JsonContentType)).ConfigureAwait(false);
                 }
                 else
                 {

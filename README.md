@@ -1,7 +1,11 @@
 ARMClient
 =========
 
-ARMClient facilitates getting token and ARM resource access.  The simplest use case is to acquire token `ARMClient.exe login` and http GET CSM resource such as `ARMClient.exe get https://management.azure.com/subscriptions?api-version=2014-04-01`
+ARMClient is a simple command line tool to invoke the Azure Resource Manager API. You can install it from [Chocolatey](https://chocolatey.org/) by running:
+
+    choco install armclient
+
+This [blog post](http://blog.davidebbo.com/2015/01/azure-resource-manager-client.html) introduces the tool and is a good place to start.
 
 Check out [wiki](https://github.com/projectkudu/ARMClient/wiki) for more details.
 
@@ -9,7 +13,7 @@ Check out [wiki](https://github.com/projectkudu/ARMClient/wiki) for more details
         ARMClient.exe login
     
     Call ARM api
-        ARMClient.exe [get|post|put|delete] [url] (-data <@file|json>) (-verbose)
+        ARMClient.exe [get|post|put|delete] [url] [@file|json] (-verbose)
     
     Copy token to clipboard
         ARMClient.exe token [tenant|subscription]
@@ -68,8 +72,11 @@ public class Site
 
 ```
 
-The make up of the call is similar to the way CSM Urls are constructed. For example if the Url looks like this
+The make up of the call is similar to the way ARM Urls are constructed. For example if the Url looks like this
 `https://management.azure.com/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{webSiteName}/slots/{slotName}/config/web`
+
+Note that you can omit the hostname, and simply have:
+`/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{webSiteName}/slots/{slotName}/config/web`
 
 then the `ARMClient` call will be `.Subscriptions["{subscriptionId}"].ResourceGroups["{resourceGroupName}"].Providers["Microsoft.Web"].Sites["{webSiteName}"].Slots["{slotName}"].Config["web"]`
 

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
+  <metadata>
+    <id>ARMClient</id>
+    <title>ARMClient</title>
+    <version>0.9.1</version>
+    <authors>Project Kudu contributors</authors>
+    <summary>A simple command line tool to invoke the Azure Resource Manager API</summary>
+    <description>A simple command line tool to invoke the Azure Resource Manager API</description>
+    <projectUrl>https://github.com/projectkudu/ARMClient</projectUrl>
+    <tags>azure rest API</tags>
+    <licenseUrl>http://www.apache.org/licenses/LICENSE-2.0.html</licenseUrl>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <releaseNotes></releaseNotes>
+  </metadata>
+  <files>
+    <file src="bin\debug\*.exe" target="tools" />
+    <file src="bin\debug\*.dll" target="tools" />
+  </files>
+</package>

@@ -1,4 +1,7 @@
-﻿
+﻿using System;
+using System.Diagnostics;
+using System.Reflection;
+
 namespace ARMClient.Authentication
 {
     public static class Constants
@@ -49,10 +52,19 @@ namespace ARMClient.Authentication
             "f8cdef31-a31e-4b4a-93e4-5f571e91255a"
         };
 
+        public static Lazy<string> UserAgent = new Lazy<string>(() =>
+        {
+            Assembly assembly = Assembly.GetExecutingAssembly();
+            FileVersionInfo fvi = FileVersionInfo.GetVersionInfo(assembly.Location);
+            return "ARMClient/" + fvi.FileVersion;
+        });
+
         public const string AADTenantId = "common";
         public const string AADClientId = "1950a258-227b-4e31-a9cf-717495945fc2";
         public const string AADRedirectUri = "urn:ietf:wg:oauth:2.0:oob";
+        public const string CSMResource = "https://management.core.windows.net/";
         public const string CSMApiVersion = "2014-01-01";
         public const string AADGraphApiVersion = "1.5";
+        public const string JsonContentType = "application/json";
     }
 }
