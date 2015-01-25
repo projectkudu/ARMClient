@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using ARMClient.Authentication.Contracts;
 using ARMClient.Authentication.Utilities;
@@ -32,14 +31,13 @@ namespace ARMClient.Authentication.TenantStorage
 
         public bool IsCacheValid()
         {
-            var cache = GetCache();
-            return cache != null && cache.Count > 0;
+            var file = ProtectedFile.GetCacheFile(_fileName);
+            return File.Exists(file);
         }
 
         public void ClearCache()
         {
-            var filePath = ProtectedFile.GetCacheFile(_fileName);
-            if (File.Exists(filePath))
+            foreach (var filePath in Directory.GetFiles(Path.GetDirectoryName(ProtectedFile.GetCacheFile(_fileName)), "cache_tenants*", SearchOption.TopDirectoryOnly))
             {
                 File.Delete(filePath);
             }

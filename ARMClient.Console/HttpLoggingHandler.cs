@@ -35,6 +35,9 @@ namespace ARMClient
                 {
                     Console.ForegroundColor = headerNameColor;
                     Console.WriteLine("{0} {1} HTTP/{2}", request.Method, request.RequestUri.PathAndQuery, request.Version);
+                    Console.Write("Host: ");
+                    Console.ForegroundColor = headerValueColor;
+                    Console.WriteLine(request.RequestUri.Host);
                 }
                 finally
                 {

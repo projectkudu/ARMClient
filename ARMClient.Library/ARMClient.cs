@@ -17,7 +17,7 @@ namespace ARMClient.Library
 {
     public class ARMClient : DynamicObject
     {
-        private string _url = "https://management.azure.com";
+        private string _url = null;
         private string _authorizationHeader;
         private readonly string _apiVersion;
         private readonly IAuthHelper _authHelper;
@@ -29,24 +29,19 @@ namespace ARMClient.Library
             return new ARMClient(apiVersion, authHelper, azureEnvironment, url);
         }
 
-        public static dynamic GetDynamicClient(string apiVersion, string authorizationHeader, string url = null)
-        {
-            return new ARMClient(apiVersion, authorizationHeader, url);
-        }
-
         private ARMClient(string apiVersion, IAuthHelper authHelper = null,
             AzureEnvironments azureEnvironment = AzureEnvironments.Prod, string url = null)
         {
             this._apiVersion = apiVersion;
             this._authHelper = authHelper ?? new AuthHelper(azureEnvironment);
             this._azureEnvironment = azureEnvironment;
-            this._url = url ?? "https://management.azure.com";
+            this._url = url ?? Constants.CSMUrls[(int)azureEnvironment];
         }
 
-        private ARMClient(string apiVersion, string authorizationHeader, string url = null)
+        private ARMClient(string apiVersion, string authorizationHeader, string url)
         {
             this._authorizationHeader = authorizationHeader;
-            this._url = url ?? "https://management.azure.com";
+            this._url = url;
         }
 
         public async Task InitializeToken(string subscriptionId = null)
@@ -62,7 +57,8 @@ namespace ARMClient.Library
                 await this._authHelper.AcquireTokens().ConfigureAwait(false);
             }
 
-            this._authorizationHeader = await this._authHelper.GetAuthorizationHeader(subscriptionId).ConfigureAwait(false);
+            TokenCacheInfo cacheInfo = await this._authHelper.GetToken(subscriptionId, Constants.CSMResource).ConfigureAwait(false);
+            this._authorizationHeader = cacheInfo.CreateAuthorizationHeader();
         }
 
         public override bool TryGetMember(GetMemberBinder binder, out object result)
@@ -157,8 +153,8 @@ namespace ARMClient.Library
 
         private Task<HttpResponseMessage> HttpInvoke(string httpVerb, object[] args)
         {
-            this._url = string.Format("{0}?api-version={1}", this._url, this._apiVersion);
-            return HttpInvoke(new Uri(this._url), httpVerb, args.Length > 0 ? args[0].ToString() : string.Empty);
+            var uri = string.Format("{0}?api-version={1}", this._url, this._apiVersion);
+            return HttpInvoke(new Uri(uri), httpVerb, args.Length > 0 ? args[0].ToString() : string.Empty);
         }
 
         private async Task<HttpResponseMessage> HttpInvoke(Uri uri, string verb, string payload)
@@ -168,6 +164,7 @@ namespace ARMClient.Library
                 client.DefaultRequestHeaders.Add("Authorization", this._authorizationHeader);
                 client.DefaultRequestHeaders.Add("User-Agent", Constants.UserAgent.Value);
                 client.DefaultRequestHeaders.Add("Accept", Constants.JsonContentType);
+                client.DefaultRequestHeaders.Add("x-ms-request-id", Guid.NewGuid().ToString());
 
                 HttpResponseMessage response = null;
                 if (String.Equals(verb, "get", StringComparison.OrdinalIgnoreCase))
