@@ -110,6 +110,7 @@ namespace ARMClient.Authentication.AADAuthentication
             var tokenCache = new CustomTokenCache();
             var cacheInfo = GetAuthorizationResultBySpn(tokenCache, tenantId, appId, appKey, Constants.CSMResource);
 
+            tenantId = cacheInfo.TenantId;
             var tenantCache = new Dictionary<string, TenantCacheInfo>();
             var info = new TenantCacheInfo
             {
@@ -152,50 +153,16 @@ namespace ARMClient.Authentication.AADAuthentication
             return cacheInfo;
         }
 
-        public async Task<TokenCacheInfo> GetTokenByUpn(string tenantId, string username, string password)
+        public async Task<TokenCacheInfo> GetTokenByUpn(string username, string password)
         {
             this.TokenStorage.ClearCache();
             this.TenantStorage.ClearCache();
 
             var tokenCache = new CustomTokenCache();
-            var cacheInfo = GetAuthorizationResultByUpn(tokenCache, tenantId, username, password, Constants.CSMResource);
+            var cacheInfo = GetAuthorizationResultByUpn(tokenCache, username, password, Constants.CSMResource);
 
-            var tenantCache = new Dictionary<string, TenantCacheInfo>();
-            var info = new TenantCacheInfo
-            {
-                tenantId = tenantId
-            };
+            var tenantCache = await GetTokenForTenants(tokenCache, cacheInfo);
 
-            try
-            {
-                var aadToken = GetAuthorizationResultByUpn(tokenCache, tenantId, username, password, Constants.AADGraphUrls[(int)AzureEnvironments]);
-                var details = await GetTenantDetail(aadToken, tenantId);
-                info.displayName = details.displayName;
-                info.domain = details.verifiedDomains.First(d => d.@default).name;
-                Utils.Trace.WriteLine(String.Format("User: {0}, Tenant: {1} ({2})", username, tenantId, details.verifiedDomains.First(d => d.@default).name));
-            }
-            catch (Exception)
-            {
-                Utils.Trace.WriteLine(String.Format("User: {0}, Tenant: {1}", username, tenantId));
-            }
-
-            var subscriptions = await GetSubscriptions(cacheInfo);
-            Utils.Trace.WriteLine(String.Format("\tThere are {0} subscriptions", subscriptions.Length));
-
-            info.subscriptions = subscriptions.Select(subscription => new SubscriptionCacheInfo
-            {
-                subscriptionId = subscription.subscriptionId,
-                displayName = subscription.displayName
-            }).ToArray();
-
-            foreach (var subscription in subscriptions)
-            {
-                Utils.Trace.WriteLine(String.Format("\tSubscription {0} ({1})", subscription.subscriptionId, subscription.displayName));
-            }
-
-            tenantCache[tenantId] = info;
-
-            this.TokenStorage.SaveRecentToken(cacheInfo, Constants.CSMResource);
             this.TokenStorage.SaveCache(tokenCache);
             this.TenantStorage.SaveCache(tenantCache);
 
@@ -373,10 +340,10 @@ namespace ARMClient.Authentication.AADAuthentication
             return cacheInfo;
         }
 
-        protected TokenCacheInfo GetAuthorizationResultByUpn(CustomTokenCache tokenCache, string tenantId, string username, string password, string resource)
+        protected TokenCacheInfo GetAuthorizationResultByUpn(CustomTokenCache tokenCache, string username, string password, string resource)
         {
             var azureEnvironment = this.AzureEnvironments;
-            var authority = String.Format("{0}/{1}", Constants.AADLoginUrls[(int)azureEnvironment], tenantId);
+            var authority = String.Format("{0}/{1}", Constants.AADLoginUrls[(int)azureEnvironment], "common");
             var context = new AuthenticationContext(
                 authority: authority,
                 validateAuthority: true,

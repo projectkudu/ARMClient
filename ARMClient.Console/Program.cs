@@ -98,12 +98,8 @@ namespace ARMClient
                     }
                     else if (String.Equals(verb, "upn", StringComparison.OrdinalIgnoreCase))
                     {
-                        var tenantId = _parameters.Get(1, keyName: "tenant");
-                        EnsureGuidFormat(tenantId);
-
-                        var username = _parameters.Get(2, keyName: "username");
-
-                        var password = _parameters.Get(3, keyName: "password", requires: false);
+                        var username = _parameters.Get(1, keyName: "username");
+                        var password = _parameters.Get(2, keyName: "password", requires: false);
                         if (password == null)
                         {
                             password = PromptForPassword("password");
@@ -111,7 +107,7 @@ namespace ARMClient
                         _parameters.ThrowIfUnknown();
 
                         persistentAuthHelper.AzureEnvironments = AzureEnvironments.Prod;
-                        var cacheInfo = persistentAuthHelper.GetTokenByUpn(tenantId, username, password).Result;
+                        var cacheInfo = persistentAuthHelper.GetTokenByUpn(username, password).Result;
                         return 0;
                     }
                     else if (String.Equals(verb, "get", StringComparison.OrdinalIgnoreCase)
@@ -158,34 +154,40 @@ namespace ARMClient
 
         static string PromptForPassword(string title)
         {
-            string pass = "";
+            string pass = String.Empty;
             Console.Write("Enter {0}: ", title);
             ConsoleKeyInfo key;
 
-            do
+            while (true)
             {
                 key = Console.ReadKey(true);
-
-                // Backspace Should Not Work
-                if (key.Key != ConsoleKey.Backspace)
+                if (key.Key == ConsoleKey.Enter)
+                {
+                    Console.WriteLine();
+                    return pass;
+                }
+                else if (key.Key == ConsoleKey.Escape)
+                {
+                    while (pass.Length > 0)
+                    {
+                        pass = pass.Remove(pass.Length - 1);
+                        Console.Write("\b \b");
+                    }
+                }
+                else if (key.Key == ConsoleKey.Backspace)
+                {
+                    if (pass.Length > 0)
+                    {
+                        pass = pass.Substring(0, pass.Length - 1);
+                        Console.Write("\b \b");
+                    }
+                }
+                else
                 {
                     pass += key.KeyChar;
                     Console.Write("*");
                 }
-                else
-                {
-                    pass = pass.Remove(pass.Length - 1);
-                    Console.Write("\b \b");
-                }
             }
-            // Stops Receving Keys Once Enter is Pressed
-            while (key.Key != ConsoleKey.Enter);
-
-            pass = pass.Remove(pass.Length - 1);
-            Console.Write("\b \b");
-            Console.WriteLine("--" + pass + "--");
-
-            return pass;
         }
 
         static Uri EnsureAbsoluteUri(string path, PersistentAuthHelper persistentAuthHelper)
@@ -284,12 +286,12 @@ namespace ARMClient
             Console.WriteLine("    ARMClient.exe token [tenant|subscription]");
 
             Console.WriteLine();
-            Console.WriteLine("Get token by ServicePrincipalName");
+            Console.WriteLine("Get token by ServicePrincipal");
             Console.WriteLine("    ARMClient.exe spn [tenant] [appId] (appKey)");
 
             Console.WriteLine();
-            Console.WriteLine("Get token by ServicePrincipalName");
-            Console.WriteLine("    ARMClient.exe upn [tenant] [username] (password)");
+            Console.WriteLine("Get token by Username/Password");
+            Console.WriteLine("    ARMClient.exe upn [username] (password)");
 
             Console.WriteLine();
             Console.WriteLine("List token cache");
