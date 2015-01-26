@@ -52,7 +52,7 @@ namespace ARMClient.Authentication.AADAuthentication
         {
             if (String.IsNullOrEmpty(id))
             {
-                return await GetRecentToken(resource);
+                return await GetRecentToken(resource ?? Constants.CSMResource);
             }
 
             string tenantId = null;
