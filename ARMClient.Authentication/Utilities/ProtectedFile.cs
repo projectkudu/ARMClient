@@ -7,9 +7,14 @@ namespace ARMClient.Authentication.Utilities
 {
     internal static class ProtectedFile
     {
+        public static string GetCachePath()
+        {
+            return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".arm");
+        }
+
         public static string GetCacheFile(string file)
         {
-            var path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".arm");
+            var path = GetCachePath();
             Directory.CreateDirectory(path);
             return Path.Combine(path, file);
         }

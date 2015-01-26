@@ -1,31 +1,32 @@
 ﻿using System;
 using System.Collections.Generic;
+using ARMClient.Authentication.Contracts;
 using Microsoft.IdentityModel.Clients.ActiveDirectory;
 
 namespace ARMClient.Authentication.TokenStorage
 {
     internal class MemoryTokenStorage : ITokenStorage
     {
-        private Dictionary<TokenCacheKey, string> _cache;
-        private AuthenticationResult _recentToken;
-        public Dictionary<TokenCacheKey, string> GetCache()
+        private CustomTokenCache _cache;
+        private TokenCacheInfo _recentToken;
+        public CustomTokenCache GetCache()
         {
-            return this._cache ?? new Dictionary<TokenCacheKey, string>();
+            return this._cache ?? new CustomTokenCache();
         }
 
-        public void SaveCache(Dictionary<TokenCacheKey, string> cache)
+        public void SaveCache(CustomTokenCache cache)
         {
             this._cache = cache;
         }
 
-        public AuthenticationResult GetRecentToken()
+        public TokenCacheInfo GetRecentToken(string resource)
         {
             return this._recentToken;
         }
 
-        public void SaveRecentToken(AuthenticationResult authResult)
+        public void SaveRecentToken(TokenCacheInfo cacheInfo, string resource)
         {
-            this._recentToken = authResult;
+            this._recentToken = cacheInfo;
         }
 
         public bool IsCacheValid()

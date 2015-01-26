@@ -1,7 +1,7 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using ARMClient.Authentication.Contracts;
-using Microsoft.IdentityModel.Clients.ActiveDirectory;
 
 namespace ARMClient.Authentication
 {
@@ -9,11 +9,9 @@ namespace ARMClient.Authentication
     {
         AzureEnvironments AzureEnvironments { get; set; }
         Task AcquireTokens();
-        Task<AuthenticationResult> GetTokenByTenant(string tenantId);
-        Task<AuthenticationResult> GetTokenBySubscription(string subscriptionId);
-        Task<AuthenticationResult> GetTokenBySpn(string tenantId, string appId, string appKey);
-        Task<AuthenticationResult> GetRecentToken();
-        Task<string> GetAuthorizationHeader(string subscriptionId);
+        Task<TokenCacheInfo> GetToken(string id, string resource);
+        Task<TokenCacheInfo> GetTokenBySpn(string tenantId, string appId, string appKey);
+        Task<TokenCacheInfo> GetTokenByUpn(string username, string password);
         bool IsCacheValid();
         void ClearTokenCache();
         IEnumerable<string> DumpTokenCache();
