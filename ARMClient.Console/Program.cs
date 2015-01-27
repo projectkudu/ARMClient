@@ -66,6 +66,12 @@ namespace ARMClient
 
                         if (tenantId != null)
                         {
+                            if (tenantId.StartsWith("ey"))
+                            {
+                                DumpClaims(tenantId);
+                                return 0;
+                            }
+
                             EnsureGuidFormat(tenantId);
                         }
 
