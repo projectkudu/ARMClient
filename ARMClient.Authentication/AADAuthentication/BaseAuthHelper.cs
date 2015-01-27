@@ -76,7 +76,7 @@ namespace ARMClient.Authentication.AADAuthentication
 
             if (String.IsNullOrEmpty(tenantId))
             {
-                return await GetRecentToken(resource);
+                return await GetRecentToken(resource ?? Constants.CSMResource);
             }
 
             if (resource == null)
