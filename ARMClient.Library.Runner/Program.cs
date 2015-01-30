@@ -15,7 +15,7 @@ namespace ARMClient.Library.Runner
 
         private static async Task Run()
         {
-            var armClient = ARMClient.GetDynamicClient(apiVersion: "2014-04-01", authHelper: new AuthHelper(AzureEnvironments.Prod));
+            var armClient = ARMLib.GetDynamicClient(apiVersion: "2014-11-01").ConfigureLogin(LoginType.Upn, "userName", "password");
 
             var resrouceGroups = await armClient.Subscriptions["{subscriptionId}"]
                                                 .ResourceGroups
@@ -31,7 +31,6 @@ namespace ARMClient.Library.Runner
 
                 if (sites.Length == 0)
                 {
-                    Console.WriteLine("ResrouceGroup: {0} Doesn't contain any websites!", resrouceGroup.name);
                 }
             }
         }
