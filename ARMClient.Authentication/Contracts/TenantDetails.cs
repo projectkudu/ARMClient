@@ -1,7 +1,7 @@
 ﻿
 namespace ARMClient.Authentication.Contracts
 {
-    internal class TenantDetails
+    public class TenantDetails
     {
         public string objectId { get; set; }
         public string displayName { get; set; }
