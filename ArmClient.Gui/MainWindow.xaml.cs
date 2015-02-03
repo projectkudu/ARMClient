@@ -1,28 +1,17 @@
 ﻿using ARMClient.Authentication;
-using ARMClient.Authentication.AADAuthentication;
 using ARMClient.Authentication.Contracts;
 using ArmGuiClient.Models;
 using ArmGuiClient.Utils;
-using Microsoft.Threading;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Globalization;
 using System.IO;
-using System.Linq;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
-using System.Web.Script.Serialization;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
 using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 using AuthUtils = ARMClient.Authentication.Utilities.Utils;
 
 namespace ArmGuiClient
@@ -228,7 +217,7 @@ namespace ArmGuiClient
             }
         }
 
-        private void RunArmRequest()
+        private async Task RunArmRequest()
         {
             try
             {
@@ -236,7 +225,7 @@ namespace ArmGuiClient
                 string subscriptionId = this.SubscriptionCB.SelectedValue as string;
                 ConfigActioin action = this.GetSelectedAction();
                 Uri uri = AuthUtils.EnsureAbsoluteUri(path, this._authHelper);
-                var cacheInfo = AsyncPump.Run<TokenCacheInfo>(() => this._authHelper.GetToken(subscriptionId, null));
+                var cacheInfo = await this._authHelper.GetToken(subscriptionId, null);
                 var handler = new HttpLoggingHandler(new HttpClientHandler(), ConfigSettingFactory.ConfigSettings.Verbose);
                 HttpContent payload = null;
                 if (!string.Equals("get", action.HttpMethod, StringComparison.OrdinalIgnoreCase)
@@ -245,7 +234,7 @@ namespace ArmGuiClient
                     payload = new StringContent(File.ReadAllText(_tmpPayloadFile), Encoding.UTF8, Constants.JsonContentType);
                 }
 
-                AsyncPump.Run(() => AuthUtils.HttpInvoke(uri, cacheInfo, action.HttpMethod, handler, payload));
+                await AuthUtils.HttpInvoke(uri, cacheInfo, action.HttpMethod, handler, payload);
             }
             catch (Exception ex)
             {
@@ -276,9 +265,9 @@ namespace ArmGuiClient
             }
         }
 
-        private void LoginBtn_Click(object sender, RoutedEventArgs e)
+        private async void LoginBtn_Click(object sender, RoutedEventArgs e)
         {
-            AsyncPump.Run(() => this._authHelper.AcquireTokens());
+            await this._authHelper.AcquireTokens();
             if (this.CheckIsLogin())
             {
                 this.PopulateTenant();
@@ -337,9 +326,9 @@ namespace ArmGuiClient
             Logger.WarnLn("Goodbye!");
         }
 
-        private void ExecuteBtn_Click(object sender, RoutedEventArgs e)
+        private async void ExecuteBtn_Click(object sender, RoutedEventArgs e)
         {
-            this.RunArmRequest();
+            await this.RunArmRequest();
         }
 
         private void ApiVersionCB_SelectionChanged(object sender, SelectionChangedEventArgs e)

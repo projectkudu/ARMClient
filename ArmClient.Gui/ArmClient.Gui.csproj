@@ -71,7 +71,6 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
-    <Compile Include="AsyncPump.cs" />
     <Compile Include="GuiPersistentAuthHelper.cs" />
     <Compile Include="Models\ConfigSettingFactory.cs" />
     <Compile Include="Utils\HttpLoggingHandler.cs" />

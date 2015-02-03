@@ -1,4 +1,5 @@
-﻿using System.Windows.Controls;
+﻿using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Documents;
 using System.Windows.Media;
 
@@ -18,13 +19,16 @@ namespace ArmGuiClient.Utils
             _outputRTB = textBox;
             _flowDoc = _outputRTB.Document;
         }
-        
+
         public static void WriteLn(string content, Brush background)
         {
-            var para = new Paragraph(new Run(content));
-            para.Background = background;
-            _outputRTB.Document.Blocks.Add(para);
-            _outputRTB.ScrollToEnd();
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                var para = new Paragraph(new Run(content));
+                para.Background = background;
+                _outputRTB.Document.Blocks.Add(para);
+                _outputRTB.ScrollToEnd();
+            });
         }
 
         public static void InfoLn(string format, params object[] args)
