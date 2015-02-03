@@ -97,6 +97,20 @@ namespace ArmGuiClient
             var editConfigCommand = new RoutedCommand();
             editConfigCommand.InputGestures.Add(new KeyGesture(Key.P, ModifierKeys.Control, "Ctrl + P"));
             this.CommandBindings.Add(new CommandBinding(editConfigCommand, this.ExecuteEditConfigCommand));
+
+            var clearOutputCommand = new RoutedCommand();
+            clearOutputCommand.InputGestures.Add(new KeyGesture(Key.F8, ModifierKeys.Control, "Ctrl + F8"));
+            this.CommandBindings.Add(new CommandBinding(clearOutputCommand, (object sender, ExecutedRoutedEventArgs e) =>
+            {
+                Logger.Clear();
+            }));
+
+            var helpCommand = new RoutedCommand();
+            helpCommand.InputGestures.Add(new KeyGesture(Key.H, ModifierKeys.Control, "Ctrl + H"));
+            this.CommandBindings.Add(new CommandBinding(helpCommand, (object sender, ExecutedRoutedEventArgs e) =>
+            {
+                this.HelpBtn_Click(null, null);
+            }));
         }
 
         private void PopulateParamsUI(ConfigActioin action)
@@ -390,5 +404,20 @@ namespace ArmGuiClient
         {
             ConfigSettingFactory.Shutdown();
         }
+
+        private void HelpBtn_Click(object sender, RoutedEventArgs e)
+        {
+            Logger.InfoLn(string.Empty);
+            Logger.InfoLn("*******************************************************************************************************************");
+            Logger.InfoLn("> Ctrl + H to print help content");
+            Logger.InfoLn("> Ctrl + P to edit config.json");
+            Logger.InfoLn("> Ctrl + W to edit payload");
+            Logger.InfoLn("> Ctrl + F8 to clear console");
+            Logger.InfoLn("> Ctrl + Enter to run command");
+            Logger.InfoLn(@"> For more information, please visit: https://github.com/projectkudu/ARMClient");
+            Logger.InfoLn("*******************************************************************************************************************");
+            Logger.InfoLn(string.Empty);
+        }
+
     }
 }

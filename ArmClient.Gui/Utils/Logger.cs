@@ -20,6 +20,15 @@ namespace ArmGuiClient.Utils
             _flowDoc = _outputRTB.Document;
         }
 
+        public static void Clear()
+        {
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                _outputRTB.Document.Blocks.Clear();
+                _outputRTB.ScrollToEnd();
+            });
+        }
+
         public static void WriteLn(string content, Brush background)
         {
             Application.Current.Dispatcher.Invoke(() =>

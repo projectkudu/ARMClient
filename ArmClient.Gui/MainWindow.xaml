@@ -40,5 +40,6 @@
                 </GridView>
             </ListView.View>
         </ListView>
+        <Button Content="?" x:Name="HelpBtn" HorizontalAlignment="Left" Margin="615,10,0,0" VerticalAlignment="Top" Width="27" Height="22" Click="HelpBtn_Click" />
     </Grid>
 </Window>

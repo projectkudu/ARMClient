@@ -84,7 +84,7 @@
         },
         {
             "httpMethod": "PUT",
-            "name": "Get Website",
+            "name": "Create Website",
             "template": "/subscriptions/{subscription}/resourceGroups/{resourceGroup}/providers/Microsoft.Web/sites/{siteName}?api-version={apiVersion}",
             "params": [
                 {
