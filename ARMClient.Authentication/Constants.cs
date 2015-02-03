@@ -52,11 +52,16 @@ namespace ARMClient.Authentication
             "f8cdef31-a31e-4b4a-93e4-5f571e91255a"
         };
 
-        public static Lazy<string> UserAgent = new Lazy<string>(() =>
+        public static Lazy<string> FileVersion = new Lazy<string>(() =>
         {
             Assembly assembly = Assembly.GetExecutingAssembly();
             FileVersionInfo fvi = FileVersionInfo.GetVersionInfo(assembly.Location);
-            return "ARMClient/" + fvi.FileVersion;
+            return fvi.FileVersion;
+        });
+
+        public static Lazy<string> UserAgent = new Lazy<string>(() =>
+        {
+            return "ARMClient/" + FileVersion.Value;
         });
 
         public const string AADTenantId = "common";

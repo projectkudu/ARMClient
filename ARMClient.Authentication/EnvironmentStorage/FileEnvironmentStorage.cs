@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.IO;
 using ARMClient.Authentication.Contracts;
 using ARMClient.Authentication.Utilities;
+using Newtonsoft.Json.Linq;
 
 namespace ARMClient.Authentication.EnvironmentStorage
 {
@@ -12,7 +13,10 @@ namespace ARMClient.Authentication.EnvironmentStorage
 
         public void SaveEnvironment(AzureEnvironments azureEnvironment)
         {
-            File.WriteAllText(ProtectedFile.GetCacheFile(_fileName), azureEnvironment.ToString());
+            var json = new JObject();
+            json["ver"] = Constants.FileVersion.Value;
+            json["env"] = azureEnvironment.ToString();
+            File.WriteAllText(ProtectedFile.GetCacheFile(_fileName), json.ToString());
         }
 
         public AzureEnvironments GetSavedEnvironment()
@@ -20,7 +24,8 @@ namespace ARMClient.Authentication.EnvironmentStorage
             var file = ProtectedFile.GetCacheFile(_fileName);
             if (File.Exists(file))
             {
-                return (AzureEnvironments)Enum.Parse(typeof(AzureEnvironments), File.ReadAllText(file));
+                var json = JObject.Parse(File.ReadAllText(file));
+                return (AzureEnvironments)Enum.Parse(typeof(AzureEnvironments), json.Value<string>("env"));
             }
 
             return AzureEnvironments.Prod;
@@ -28,13 +33,39 @@ namespace ARMClient.Authentication.EnvironmentStorage
 
         public bool IsCacheValid()
         {
-            return true;
+            var file = ProtectedFile.GetCacheFile(_fileName);
+            if (!File.Exists(file))
+            {
+                return false;
+            }
+
+            try
+            {
+                var json = JObject.Parse(File.ReadAllText(file));
+                if (Constants.FileVersion.Value != json.Value<string>("ver"))
+                {
+                    ClearAll();
+                    return false;
+                }
+
+                AzureEnvironments unused;
+                return Enum.TryParse<AzureEnvironments>(json.Value<string>("env"), out unused);
+            }
+            catch (Exception)
+            {
+                ClearAll();
+                return false;
+            }
         }
 
         public void ClearSavedEnvironment()
         {
-            var filePath = ProtectedFile.GetCacheFile(_fileName);
-            if (File.Exists(filePath))
+            ClearAll();
+        }
+
+        private void ClearAll()
+        {
+            foreach (var filePath in Directory.GetFiles(ProtectedFile.GetCachePath(), "*", SearchOption.TopDirectoryOnly))
             {
                 File.Delete(filePath);
             }

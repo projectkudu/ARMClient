@@ -126,9 +126,10 @@ namespace ARMClient
                         }
 
                         var uri = EnsureAbsoluteUri(path, persistentAuthHelper);
-                        if (!persistentAuthHelper.IsCacheValid())
+                        var env = GetAzureEnvironments(uri, persistentAuthHelper);
+                        if (!persistentAuthHelper.IsCacheValid() || persistentAuthHelper.AzureEnvironments != env)
                         {
-                            persistentAuthHelper.AzureEnvironments = GetAzureEnvironments(uri);
+                            persistentAuthHelper.AzureEnvironments = env;
                             persistentAuthHelper.AcquireTokens().Wait();
                         }
 
@@ -421,7 +422,7 @@ namespace ARMClient
             }
         }
 
-        static AzureEnvironments GetAzureEnvironments(Uri uri)
+        static AzureEnvironments GetAzureEnvironments(Uri uri, PersistentAuthHelper persistentAuthHelper)
         {
             var host = uri.Host;
             for (int i = 0; i < Constants.AADGraphUrls.Length; ++i)
@@ -429,6 +430,21 @@ namespace ARMClient
                 var url = Constants.AADGraphUrls[i];
                 if (url.IndexOf(host, StringComparison.OrdinalIgnoreCase) > 0)
                 {
+                    if ((AzureEnvironments)i == AzureEnvironments.Prod)
+                    {
+                        return (AzureEnvironments)i;
+                    }
+
+                    if (!persistentAuthHelper.IsCacheValid())
+                    {
+                        return (AzureEnvironments)i;
+                    }
+
+                    if (persistentAuthHelper.AzureEnvironments != AzureEnvironments.Prod)
+                    {
+                        return persistentAuthHelper.AzureEnvironments;
+                    }
+
                     return (AzureEnvironments)i;
                 }
             }

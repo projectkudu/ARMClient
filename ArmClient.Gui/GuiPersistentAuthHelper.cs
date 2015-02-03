@@ -6,8 +6,7 @@ namespace ArmGuiClient
 {
     public class GuiPersistentAuthHelper : PersistentAuthHelper
     {
-        public GuiPersistentAuthHelper(AzureEnvironments azureEnvironment = AzureEnvironments.Prod)
-            : base(azureEnvironment)
+        public GuiPersistentAuthHelper()
         {
         }
 

@@ -33,7 +33,9 @@ namespace ArmGuiClient
 
             try
             {
-                this._authHelper = new GuiPersistentAuthHelper(ConfigSettingFactory.ConfigSettings.GetAzureEnvironments());
+                this._authHelper = new GuiPersistentAuthHelper();
+                this._authHelper.AzureEnvironments = ConfigSettingFactory.ConfigSettings.GetAzureEnvironments();
+
                 this.InitUI();
                 if (this.CheckIsLogin())
                 {

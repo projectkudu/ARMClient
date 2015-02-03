@@ -48,6 +48,11 @@ namespace ARMClient.Authentication.Contracts
             _caches[GetKey(cacheInfo.TenantId, cacheInfo.Resource)] = cacheInfo;
         }
 
+        public void Clone(CustomTokenCache tokenCache)
+        {
+            _caches = tokenCache._caches;
+        }
+
         private string GetKey(string tenantId, string resource)
         {
             return String.Format("{0}::{1}", tenantId, resource);

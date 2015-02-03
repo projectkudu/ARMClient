@@ -19,7 +19,7 @@ namespace ARMClient.Authentication.AADAuthentication
         protected readonly ITokenStorage TokenStorage;
         protected readonly ITenantStorage TenantStorage;
         protected readonly IEnvironmentStorage EnvironmentStorage;
-        protected BaseAuthHelper(AzureEnvironments azureEnvironment, ITokenStorage tokenStorage,
+        protected BaseAuthHelper(ITokenStorage tokenStorage,
             ITenantStorage tenantStorage, IEnvironmentStorage environmentStorage)
         {
             this.EnvironmentStorage = environmentStorage;
@@ -152,7 +152,22 @@ namespace ARMClient.Authentication.AADAuthentication
         {
             if (!String.IsNullOrEmpty(cacheInfo.RefreshToken))
             {
-                return await GetAuthorizationResultByRefreshToken(tokenCache, cacheInfo);
+                try
+                {
+                    return await GetAuthorizationResultByRefreshToken(tokenCache, cacheInfo);
+                }
+                catch (AdalServiceException ex)
+                {
+                    if (ex.Message.IndexOf("The provided access grant is expired or revoked") > 0)
+                    {
+                        AcquireTokens().Wait();
+                        cacheInfo = GetToken(cacheInfo.TenantId, cacheInfo.Resource).Result;
+                        tokenCache.Clone(this.TokenStorage.GetCache());
+                        return cacheInfo;
+                    }
+
+                    throw;
+                }
             }
             else if (!String.IsNullOrEmpty(cacheInfo.AppId) && !String.IsNullOrEmpty(cacheInfo.AppKey))
             {
@@ -164,7 +179,7 @@ namespace ARMClient.Authentication.AADAuthentication
 
         public bool IsCacheValid()
         {
-            return this.TokenStorage.IsCacheValid() && this.TenantStorage.IsCacheValid() && this.EnvironmentStorage.IsCacheValid();
+            return this.EnvironmentStorage.IsCacheValid() && this.TokenStorage.IsCacheValid() && this.TenantStorage.IsCacheValid();
         }
 
         public void ClearTokenCache()

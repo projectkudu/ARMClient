@@ -40,7 +40,7 @@ namespace ARMClient.Library
         private ARMLib(string apiVersion, AzureEnvironments azureEnvironment, string url)
         {
             this._apiVersion = apiVersion;
-            this._authHelper = new AuthHelper(azureEnvironment);
+            this._authHelper = new AuthHelper();
             this._azureEnvironment = azureEnvironment;
             this._url = url ?? Constants.CSMUrls[(int)azureEnvironment];
             this._query = string.Empty;

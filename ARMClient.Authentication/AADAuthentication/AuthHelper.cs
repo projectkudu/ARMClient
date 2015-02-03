@@ -7,11 +7,9 @@ namespace ARMClient.Authentication.AADAuthentication
 {
     public class AuthHelper : BaseAuthHelper, IAuthHelper
     {
-        public AuthHelper(AzureEnvironments azureEnvironment = AzureEnvironments.Prod)
-            : base(azureEnvironment, new MemoryTokenStorage(), new MemoryTenantStorage(), new MemoryEnvironmentStorage()
-                )
+        public AuthHelper()
+            : base(new MemoryTokenStorage(), new MemoryTenantStorage(), new MemoryEnvironmentStorage())
         {
-
         }
     }
 }
