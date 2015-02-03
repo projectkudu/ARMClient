@@ -41,7 +41,6 @@ namespace ARMClient
                     else if (String.Equals(verb, "listcache", StringComparison.OrdinalIgnoreCase))
                     {
                         _parameters.ThrowIfUnknown();
-                        
                         EnsureTokenCache(persistentAuthHelper);
 
                         foreach (var line in persistentAuthHelper.DumpTokenCache())
@@ -53,7 +52,6 @@ namespace ARMClient
                     else if (String.Equals(verb, "clearcache", StringComparison.OrdinalIgnoreCase))
                     {
                         _parameters.ThrowIfUnknown();
-                        
                         persistentAuthHelper.ClearTokenCache();
                         return 0;
                     }
@@ -87,7 +85,6 @@ namespace ARMClient
                     {
                         var tenantId = _parameters.Get(1, keyName: "tenant");
                         EnsureGuidFormat(tenantId);
-                        
                         var appId = _parameters.Get(2, keyName: "appId");
                         EnsureGuidFormat(appId);
 
@@ -339,51 +336,8 @@ namespace ARMClient
 
         static async Task<int> HttpInvoke(Uri uri, TokenCacheInfo cacheInfo, string verb, bool verbose, HttpContent content)
         {
-            using (var client = new HttpClient(new HttpLoggingHandler(new HttpClientHandler(), verbose)))
-            {
-                client.DefaultRequestHeaders.Add("Authorization", cacheInfo.CreateAuthorizationHeader());
-                client.DefaultRequestHeaders.Add("User-Agent", Constants.UserAgent.Value);
-                client.DefaultRequestHeaders.Add("Accept", Constants.JsonContentType);
-
-                if (IsRdfe(uri))
-                {
-                    client.DefaultRequestHeaders.Add("x-ms-version", "2013-10-01");
-                }
-
-                client.DefaultRequestHeaders.Add("x-ms-request-id", Guid.NewGuid().ToString());
-                
-                HttpResponseMessage response = null;
-                if (String.Equals(verb, "get", StringComparison.OrdinalIgnoreCase))
-                {
-                    response = await client.GetAsync(uri);
-                }
-                else if (String.Equals(verb, "delete", StringComparison.OrdinalIgnoreCase))
-                {
-                    response = await client.DeleteAsync(uri);
-                }
-                else if (String.Equals(verb, "post", StringComparison.OrdinalIgnoreCase))
-                {
-                    response = await client.PostAsync(uri, content);
-                }
-                else if (String.Equals(verb, "put", StringComparison.OrdinalIgnoreCase))
-                {
-                    response = await client.PutAsync(uri, content);
-                }
-                else
-                {
-                    throw new InvalidOperationException(String.Format("Invalid http verb {0}!", verb));
-                }
-
-                using (response)
-                {
-                    if (response.IsSuccessStatusCode)
-                    {
-                        return 0;
-                    }
-
-                    return (-1) * (int)response.StatusCode;
-                }
-            }
+            var logginerHandler = new HttpLoggingHandler(new HttpClientHandler(), verbose);
+            return await Utils.HttpInvoke(uri, cacheInfo, verb, logginerHandler, content);
         }
 
         //http://stackoverflow.com/questions/4810841/how-can-i-pretty-print-json-using-javascript
@@ -438,24 +392,12 @@ namespace ARMClient
             }
         }
 
-        static bool IsRdfe(Uri uri)
-        {
-            var host = uri.Host;
-            return Constants.RdfeUrls.Any(url => url.IndexOf(host, StringComparison.OrdinalIgnoreCase) > 0);
-        }
-
-        static bool IsGraphApi(Uri uri)
-        {
-            var host = uri.Host;
-            return Constants.AADGraphUrls.Any(url => url.IndexOf(host, StringComparison.OrdinalIgnoreCase) > 0);
-        }
-
         static string GetTenantOrSubscription(Uri uri)
         {
             try
             {
                 var paths = uri.AbsolutePath.Split(new[] { '/', '?' }, StringSplitOptions.RemoveEmptyEntries);
-                if (IsGraphApi(uri))
+                if (Utils.IsGraphApi(uri))
                 {
                     return Guid.Parse(paths[0]).ToString();
                 }

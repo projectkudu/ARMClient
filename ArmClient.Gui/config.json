@@ -1,0 +1,129 @@
+﻿{
+    "TargetEnvironment": "Prod",
+    "ApiVersions": [ "2014-04-01", "2014-11-01" ],
+    "Verbose": "true",
+    "Editor": "%windir%\\system32\\notepad.exe",
+    "AutoPromptEditor": "true",
+    "DefaultValues": {
+        "resourceGroup": "tryag",
+        siteName: "trysite001"
+    },
+    "Actioins": [
+        {
+            "httpMethod": "GET",
+            "name": "List Resource Groups",
+            "template": "/subscriptions/{subscription}/resourceGroups?api-version={apiVersion}"
+        },
+        {
+            "httpMethod": "GET",
+            "name": "Get Resource Group",
+            "template": "/subscriptions/{subscription}/resourceGroups/{resourceGroup}?api-version={apiVersion}",
+            "params": [
+                {
+                    "name": "Resource Group Name",
+                    "placeHolder": "resourceGroup",
+                    "required": "true"
+                }
+            ]
+        },
+        {
+            "httpMethod": "PUT",
+            "name": "Create Resource Group",
+            "template": "/subscriptions/{subscription}/resourceGroups/{resourceGroup}?api-version={apiVersion}",
+            "params": [
+                {
+                    "name": "Resource Group Name",
+                    "placeHolder": "resourceGroup",
+                    "required": "true"
+                }
+            ],
+            "payload": {
+                "location": "{location}"
+            }
+        },
+        {
+            "httpMethod": "DELETE",
+            "name": "Delete Resource Group",
+            "template": "/subscriptions/{subscription}/resourceGroups/{resourceGroup}?api-version={apiVersion}",
+            "params": [
+                {
+                    "name": "Resource Group Name",
+                    "placeHolder": "resourceGroup",
+                    "required": "true"
+                }
+            ]
+        },
+        {
+            "httpMethod": "GET",
+            "name": "List Websites",
+            "template": "/subscriptions/{subscription}/resourceGroups/{resourceGroup}/providers/Microsoft.Web/sites?api-version={apiVersion}",
+            "params": [
+                {
+                    "name": "Resource Group Name",
+                    "placeHolder": "resourceGroup",
+                    "required": "true"
+                }
+            ]
+        },
+        {
+            "httpMethod": "GET",
+            "name": "Get Website",
+            "template": "/subscriptions/{subscription}/resourceGroups/{resourceGroup}/providers/Microsoft.Web/sites/{siteName}?api-version={apiVersion}",
+            "params": [
+                {
+                    "name": "Resource Group Name",
+                    "placeHolder": "resourceGroup",
+                    "required": "true"
+                },
+                {
+                    "name": "Website Name",
+                    "placeHolder": "siteName",
+                    "required": "true"
+                }
+            ]
+        },
+        {
+            "httpMethod": "GET",
+            "name": "List Site Extensions",
+            "template": "/subscriptions/{subscription}/resourceGroups/{resourceGroup}/providers/Microsoft.Web/sites/{siteName}/siteextensions?api-version={apiVersion}",
+            "params": [
+                {
+                    "name": "Resource Group Name",
+                    "placeHolder": "resourceGroup",
+                    "required": "true"
+                },
+                {
+                    "name": "Website Name",
+                    "placeHolder": "siteName",
+                    "required": "true"
+                }
+            ]
+        },
+        {
+            "httpMethod": "PUT",
+            "name": "Install Site Extensions",
+            "template": "/subscriptions/{subscription}/resourceGroups/{resourceGroup}/providers/Microsoft.Web/sites/{siteName}/siteextensions/{extensionName}?api-version={apiVersion}",
+            "params": [
+                {
+                    "name": "Resource Group Name",
+                    "placeHolder": "resourceGroup",
+                    "required": "true"
+                },
+                {
+                    "name": "Website Name",
+                    "placeHolder": "siteName",
+                    "required": "true"
+                },
+                {
+                    "name": "Extension Name",
+                    "placeHolder": "extensionName",
+                    "required": "true"
+                }
+            ],
+            "payload": {
+                "properties": {
+                }
+            }
+        }
+    ]
+}

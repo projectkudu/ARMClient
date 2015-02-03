@@ -1,0 +1,44 @@
+﻿<Window
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:System="clr-namespace:System;assembly=mscorlib" x:Class="ArmGuiClient.MainWindow"
+        Title="ARM GUI Client" Height="665.5" Width="809" ResizeMode="NoResize">
+    <Grid>
+        <ComboBox x:Name="SubscriptionCB" HorizontalAlignment="Left" Margin="201,10,0,0" VerticalAlignment="Top" Width="298" Height="22" SelectionChanged="SubscriptionCB_SelectionChanged"/>
+        <Button x:Name="LoginBtn" Content="Login" HorizontalAlignment="Left" Margin="651,10,0,0" VerticalAlignment="Top" Width="67" Click="LoginBtn_Click" Height="22"/>
+        <Button x:Name="LogoutBtn" Content="Logout" HorizontalAlignment="Left" Margin="723,10,0,0" VerticalAlignment="Top" Width="67" Click="LogoutBtn_Click" Height="22"/>
+        <RichTextBox x:Name="OutputRTB" IsReadOnly="True" HorizontalAlignment="Left" Height="534" Margin="201,39,0,0" 
+                     VerticalAlignment="Top" Width="589" ScrollViewer.VerticalScrollBarVisibility="Auto" Padding="0">
+            <FlowDocument>
+                <FlowDocument.Resources>
+                    <Style TargetType="{x:Type Paragraph}">
+                        <Setter Property="Margin" Value="0" />
+                        <Setter Property="Padding" Value="0" />
+                        <Setter Property="BorderThickness" Value="0" />
+                    </Style>
+                </FlowDocument.Resources>
+                <Paragraph>
+                </Paragraph>
+            </FlowDocument>
+        </RichTextBox>
+        <TextBox x:Name="CmdText" HorizontalAlignment="Left" Height="46" Margin="0,579,0,0" TextWrapping="Wrap" Text="TextBox" VerticalAlignment="Top" Width="694"/>
+        <Button x:Name="ExecuteBtn" Margin="710,579,0,0" VerticalAlignment="Top" Height="46" HorizontalAlignment="Left" Width="80" Click="ExecuteBtn_Click">
+            <StackPanel>
+                <TextBlock Text="Execute" HorizontalAlignment="Center"/>
+                <TextBlock Text="(Ctrl + Enter)" HorizontalAlignment="Center"/>
+            </StackPanel>
+        </Button>
+        <ComboBox x:Name="ApiVersionCB" HorizontalAlignment="Left" Margin="504,10,0,0" VerticalAlignment="Top" Width="100" Height="22" SelectedIndex="0" SelectionChanged="ApiVersionCB_SelectionChanged">
+            <System:String>2014-11-01</System:String>
+        </ComboBox>
+        <ComboBox x:Name="TenantCB" HorizontalAlignment="Left" Margin="6,10,0,0" VerticalAlignment="Top" Width="190" SelectionChanged="TenantCB_SelectionChanged"/>
+        <ComboBox x:Name="ActionCB" HorizontalAlignment="Left" Margin="6,39,0,0" VerticalAlignment="Top" Width="190" SelectionChanged="ActionCB_SelectionChanged"/>
+        <ListView x:Name="ParamLV" HorizontalAlignment="Left" Height="507" Margin="0,66,0,0" VerticalAlignment="Top" Width="201">
+            <ListView.View>
+                <GridView>
+                    <GridViewColumn/>
+                </GridView>
+            </ListView.View>
+        </ListView>
+    </Grid>
+</Window>
