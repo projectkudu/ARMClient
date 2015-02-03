@@ -82,3 +82,9 @@ then the `ARMClient` call will be `.Subscriptions["{subscriptionId}"].ResourceGr
 
 Note: Capitalization is optional `.Subscriptions[""]` == `.subscription[""]` also the distinction between `[]` and `.` is also optional  `.Config["web"]` == `.Config.Web`.
 However, some names like subscription Ids which are usually GUIDs are not valid C# identifiers so you will have to use the indexer notation.
+
+ArmGuiClient
+=========
+There is also a WPF GUI tool we create for ease of use. [See ArmGuiClient help page for more details](https://github.com/projectkudu/ARMClient/wiki/ArmGuiClient)
+
+![ArmGuiClient.exe](https://github.com/shrimpy/screenshots/blob/master/ArmGuiClient.png)
