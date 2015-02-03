@@ -6,7 +6,7 @@
     "AutoPromptEditor": "true",
     "DefaultValues": {
         "resourceGroup": "tryag",
-        siteName: "trysite001"
+        "location": "westus"
     },
     "Actioins": [
         {
@@ -81,6 +81,29 @@
                     "required": "true"
                 }
             ]
+        },
+        {
+            "httpMethod": "PUT",
+            "name": "Get Website",
+            "template": "/subscriptions/{subscription}/resourceGroups/{resourceGroup}/providers/Microsoft.Web/sites/{siteName}?api-version={apiVersion}",
+            "params": [
+                {
+                    "name": "Resource Group Name",
+                    "placeHolder": "resourceGroup",
+                    "required": "true"
+                },
+                {
+                    "name": "Website Name",
+                    "placeHolder": "siteName",
+                    "required": "true"
+                }
+            ],
+            payload: {
+                "location": "{location}",
+                "properties": {
+                    "serverFarm": "{serverFarm}"
+                }
+            }
         },
         {
             "httpMethod": "GET",

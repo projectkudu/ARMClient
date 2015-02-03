@@ -46,6 +46,7 @@ namespace ArmGuiClient.Models
     public class ConfigSettings
     {
         private string _editor;
+        private Dictionary<string, object> _defaultValues;
 
         public string TargetEnvironment { get; set; }
 
@@ -73,7 +74,22 @@ namespace ArmGuiClient.Models
 
         public bool AutoPromptEditor { get; set; }
 
-        public Dictionary<string, object> DefaultValues { get; set; }
+        public Dictionary<string, object> DefaultValues
+        {
+            get
+            {
+                if (this._defaultValues == null)
+                {
+                    this._defaultValues = new Dictionary<string, object>();
+                }
+
+                return this._defaultValues;
+            }
+            set
+            {
+                this._defaultValues = value;
+            }
+        }
 
         public ConfigActioin[] Actioins { get; set; }
 

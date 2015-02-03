@@ -120,6 +120,10 @@ namespace ArmGuiClient
 
                 TextBox textbox = new TextBox();
                 textbox.Name = param.PlaceHolder;
+                if (ConfigSettingFactory.ConfigSettings.DefaultValues.ContainsKey(param.PlaceHolder))
+                {
+                    textbox.Text = ConfigSettingFactory.ConfigSettings.DefaultValues[param.PlaceHolder].ToString();
+                }
                 textbox.Width = textboxWidth;
                 textbox.KeyUp += new KeyEventHandler((object sender, KeyEventArgs e) =>
                 {
@@ -263,6 +267,10 @@ namespace ArmGuiClient
                 }
 
                 string payload = action.Payload;
+                foreach (var item in ConfigSettingFactory.ConfigSettings.DefaultValues)
+                {
+                    payload = payload.Replace("{" + item.Key + "}", item.Value.ToString());
+                }
                 File.WriteAllText(_tmpPayloadFile, string.IsNullOrWhiteSpace(payload) ? "" : payload);
                 Process.Start(ConfigSettingFactory.ConfigSettings.Editor, _tmpPayloadFile);
                 Logger.InfoLn("Editing payload in {0} (Ctrl + W)", _tmpPayloadFile);
