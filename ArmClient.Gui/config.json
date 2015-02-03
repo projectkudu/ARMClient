@@ -3,7 +3,11 @@
     "ApiVersions": [ "2014-04-01", "2014-11-01" ],
     "Verbose": "true",
     "Editor": "%windir%\\system32\\notepad.exe",
-    "AutoPromptEditor":  "true",
+    "AutoPromptEditor": "true",
+    "DefaultValues": {
+        "resourceGroup": "tryag",
+        siteName: "trysite001"
+    },
     "Actioins": [
         {
             "httpMethod": "GET",

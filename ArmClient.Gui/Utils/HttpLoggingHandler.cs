@@ -1,15 +1,11 @@
-﻿using ARMClient.Authentication;
-using Newtonsoft.Json.Linq;
+﻿using Newtonsoft.Json;
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Net.Http;
-using System.Text;
+using System.Net.Http.Headers;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Windows.Controls;
-using System.Windows.Media;
 
 namespace ArmGuiClient.Utils
 {
@@ -54,36 +50,43 @@ namespace ArmGuiClient.Utils
             HttpResponseMessage response = await base.SendAsync(request, cancellationToken);
             watch.Stop();
 
+            int responseStatusCocde = (int)response.StatusCode;
+
             if (_verbose)
             {
                 Logger.InfoLn("---------- Response ({0} ms) ------------", watch.ElapsedMilliseconds);
-                Logger.InfoLn("HTTP/{0} {1} {2}", response.Version, (int)response.StatusCode, response.StatusCode);
+                Logger.InfoLn("HTTP/{0} {1} {2}", response.Version, responseStatusCocde, response.StatusCode);
                 foreach (var header in response.Headers)
                 {
                     Logger.InfoLn("{0}: {1}", header.Key, String.Join("; ", header.Value));
                 }
             }
 
-            await DumpContent(response.Content);
+            await DumpContent(response.Content, this.isErrorRequest(responseStatusCocde));
             return response;
         }
 
-        private async Task DumpContent(HttpContent content)
+        private async Task DumpContent(HttpContent content, bool isErrorContent = false)
         {
             if (content == null || content.Headers.ContentType == null)
             {
                 return;
             }
             var result = await content.ReadAsStringAsync();
+
             Logger.InfoLn(string.Empty);
-            if (!string.IsNullOrWhiteSpace(result) && result.StartsWith("{\"error\"", StringComparison.OrdinalIgnoreCase))
+            if (!string.IsNullOrWhiteSpace(result))
             {
-                Logger.WriteLn(result, Logger.ErrorBrush);
+                dynamic parsedJson = JsonConvert.DeserializeObject(result);
+                string indentedResult = JsonConvert.SerializeObject(parsedJson, Formatting.Indented);
+
+                Logger.WriteLn(indentedResult, isErrorContent ? Logger.ErrorBrush : Logger.InfoBrush);
             }
-            else
-            {
-                Logger.WriteLn(result, Logger.InfoBrush);
-            }
+        }
+
+        private bool isErrorRequest(int responseStatusCode)
+        {
+            return responseStatusCode >= 400 && responseStatusCode < 600;
         }
     }
 }

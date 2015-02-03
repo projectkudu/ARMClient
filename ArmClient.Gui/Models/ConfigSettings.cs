@@ -1,10 +1,6 @@
 ﻿using ARMClient.Authentication.Contracts;
 using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Web.Script.Serialization;
 
 namespace ArmGuiClient.Models
@@ -48,7 +44,7 @@ namespace ArmGuiClient.Models
     }
 
     public class ConfigSettings
-    {        
+    {
         private string _editor;
 
         public string TargetEnvironment { get; set; }
@@ -76,6 +72,8 @@ namespace ArmGuiClient.Models
         public string[] ApiVersions { get; set; }
 
         public bool AutoPromptEditor { get; set; }
+
+        public Dictionary<string, object> DefaultValues { get; set; }
 
         public ConfigActioin[] Actioins { get; set; }
 

@@ -93,6 +93,10 @@ namespace ArmGuiClient
             var executeArmCommand = new RoutedCommand();
             executeArmCommand.InputGestures.Add(new KeyGesture(Key.Enter, ModifierKeys.Control, "Ctrl + Enter"));
             this.CommandBindings.Add(new CommandBinding(executeArmCommand, this.ExecuteRunArmRequestCommand));
+
+            var editConfigCommand = new RoutedCommand();
+            editConfigCommand.InputGestures.Add(new KeyGesture(Key.P, ModifierKeys.Control, "Ctrl + P"));
+            this.CommandBindings.Add(new CommandBinding(editConfigCommand, this.ExecuteEditConfigCommand));
         }
 
         private void PopulateParamsUI(ConfigActioin action)
@@ -221,6 +225,7 @@ namespace ArmGuiClient
         {
             try
             {
+                this.ExecuteBtn.IsEnabled = false;
                 string path = this.CmdText.Text;
                 string subscriptionId = this.SubscriptionCB.SelectedValue as string;
                 ConfigActioin action = this.GetSelectedAction();
@@ -240,6 +245,10 @@ namespace ArmGuiClient
             {
                 Logger.ErrorLn("{0} {1}", ex.Message, ex.StackTrace);
             }
+            finally
+            {
+                this.ExecuteBtn.IsEnabled = true;
+            }
         }
 
         private void InvokeEditorToEditPayload()
@@ -256,7 +265,7 @@ namespace ArmGuiClient
                 string payload = action.Payload;
                 File.WriteAllText(_tmpPayloadFile, string.IsNullOrWhiteSpace(payload) ? "" : payload);
                 Process.Start(ConfigSettingFactory.ConfigSettings.Editor, _tmpPayloadFile);
-                Logger.InfoLn("Editing payload in {0}. (Ctrl + W)", _tmpPayloadFile);
+                Logger.InfoLn("Editing payload in {0} (Ctrl + W)", _tmpPayloadFile);
             }
             catch (Exception ex)
             {
@@ -349,9 +358,24 @@ namespace ArmGuiClient
             this.InvokeEditorToEditPayload();
         }
 
-        private void ExecuteRunArmRequestCommand(object sender, ExecutedRoutedEventArgs e)
+        private async void ExecuteRunArmRequestCommand(object sender, ExecutedRoutedEventArgs e)
         {
-            this.RunArmRequest();
+            await this.RunArmRequest();
+        }
+
+        private void ExecuteEditConfigCommand(object sender, ExecutedRoutedEventArgs e)
+        {
+            try
+            {
+                Process.Start(ConfigSettingFactory.ConfigSettings.Editor, ConfigSettingFactory.ConfigFilePath);
+                Logger.InfoLn("Editing {0} (Ctrl + P)", ConfigSettingFactory.ConfigFilePath);
+            }
+            catch (Exception ex)
+            {
+                Logger.ErrorLn("Editor: '{0}'", ConfigSettingFactory.ConfigSettings.Editor);
+                Logger.ErrorLn("Expecting Config.json in: '{0}'", ConfigSettingFactory.ConfigFilePath);
+                Logger.ErrorLn("{0} {1}", ex.Message, ex.StackTrace);
+            }
         }
 
         private void OnApplicationShutdown(object sender, EventArgs arg)

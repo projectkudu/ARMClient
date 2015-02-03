@@ -9,7 +9,7 @@ namespace ArmGuiClient.Models
 {
     internal class ConfigSettingFactory
     {
-        private static readonly string ConfigFilePath = System.IO.Path.Combine(Environment.CurrentDirectory, "config.json");
+        public static readonly string ConfigFilePath = System.IO.Path.Combine(Environment.CurrentDirectory, "config.json");
         private static ConfigSettings _settingInstance;
         private static FileSystemWatcher _configWatcher;
         private static Timer _refreshTimer;
