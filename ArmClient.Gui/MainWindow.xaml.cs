@@ -34,7 +34,6 @@ namespace ArmGuiClient
             try
             {
                 this._authHelper = new GuiPersistentAuthHelper();
-                this._authHelper.AzureEnvironments = ConfigSettingFactory.ConfigSettings.GetAzureEnvironments();
 
                 this.InitUI();
                 if (this.CheckIsLogin())
@@ -300,6 +299,7 @@ namespace ArmGuiClient
 
         private async void LoginBtn_Click(object sender, RoutedEventArgs e)
         {
+            this._authHelper.AzureEnvironments = ConfigSettingFactory.ConfigSettings.GetAzureEnvironments();
             await this._authHelper.AcquireTokens();
             if (this.CheckIsLogin())
             {

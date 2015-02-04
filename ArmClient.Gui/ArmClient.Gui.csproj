@@ -71,6 +71,9 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="..\ARMClient.Authentication\Properties\AssemblyInfo.cs">
+      <Link>Properties\AssemblyInfo.cs</Link>
+    </Compile>
     <Compile Include="GuiPersistentAuthHelper.cs" />
     <Compile Include="Models\ConfigSettingFactory.cs" />
     <Compile Include="Utils\HttpLoggingHandler.cs" />
@@ -90,9 +93,6 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Models\ConfigSettings.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs">
-      <SubType>Code</SubType>
-    </Compile>
     <Compile Include="Properties\Resources.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
