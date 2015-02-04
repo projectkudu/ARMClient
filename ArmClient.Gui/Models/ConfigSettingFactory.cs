@@ -4,15 +4,16 @@ using System;
 using System.IO;
 using System.Timers;
 using System.Web.Script.Serialization;
-using System.Windows;
 namespace ArmGuiClient.Models
 {
     internal class ConfigSettingFactory
     {
-        public static readonly string ConfigFilePath = System.IO.Path.Combine(Environment.CurrentDirectory, "config.json");
+        public static readonly string ConfigFilePath = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "config.json");
         private static ConfigSettings _settingInstance;
         private static FileSystemWatcher _configWatcher;
         private static Timer _refreshTimer;
+        private static Action _externalEventWhenConfigChanged;
+
 
         public static void Init()
         {
@@ -34,13 +35,26 @@ namespace ArmGuiClient.Models
                 try
                 {
                     _settingInstance = GetConfigSettings();
+                    try
+                    {
+                        _externalEventWhenConfigChanged();
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.ErrorLn("{0} {1}", ex.Message, ex.StackTrace);
+                    }
                     Logger.InfoLn("Changes are detected from config.json. Setting updated.");
                 }
                 catch (Exception ex)
                 {
-                    Logger.ErrorLn("Changes are detected from config.json. {0} {1}", ex.Message, ex.StackTrace);
+                    Logger.ErrorLn("{0} {1}\nChanges are detected from config.json but failed to read.", ex.Message, ex.StackTrace);
                 }
             };
+        }
+
+        public static void RegisterOnChangedEvent(Action action)
+        {
+            _externalEventWhenConfigChanged = action;
         }
 
         public static void Shutdown()

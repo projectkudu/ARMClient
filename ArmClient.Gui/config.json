@@ -5,8 +5,7 @@
     "Editor": "%windir%\\system32\\notepad.exe",
     "AutoPromptEditor": "true",
     "DefaultValues": {
-        "resourceGroup": "tryag",
-        "location": "westus"
+        "placeholderFromParamsOrPayload": "default value for params or payload"
     },
     "Actioins": [
         {
@@ -106,6 +105,23 @@
             }
         },
         {
+            "httpMethod": "DELETE",
+            "name": "Delete Website",
+            "template": "/subscriptions/{subscription}/resourceGroups/{resourceGroup}/providers/Microsoft.Web/sites/{siteName}?api-version={apiVersion}",
+            "params": [
+                {
+                    "name": "Resource Group Name",
+                    "placeHolder": "resourceGroup",
+                    "required": "true"
+                },
+                {
+                    "name": "Website Name",
+                    "placeHolder": "siteName",
+                    "required": "true"
+                }
+            ]
+        },
+        {
             "httpMethod": "GET",
             "name": "List Site Extensions",
             "template": "/subscriptions/{subscription}/resourceGroups/{resourceGroup}/providers/Microsoft.Web/sites/{siteName}/siteextensions?api-version={apiVersion}",
@@ -125,7 +141,7 @@
         {
             "httpMethod": "PUT",
             "name": "Install Site Extensions",
-            "template": "/subscriptions/{subscription}/resourceGroups/{resourceGroup}/providers/Microsoft.Web/sites/{siteName}/siteextensions/{extensionName}?api-version={apiVersion}",
+            "template": "/subscriptions/{subscription}/resourceGroups/{resourceGroup}/providers/Microsoft.Web/sites/{siteName}/siteextensions/{siteExtensionName}?api-version={apiVersion}",
             "params": [
                 {
                     "name": "Resource Group Name",
@@ -139,7 +155,7 @@
                 },
                 {
                     "name": "Extension Name",
-                    "placeHolder": "extensionName",
+                    "placeHolder": "siteExtensionName",
                     "required": "true"
                 }
             ],
@@ -147,6 +163,50 @@
                 "properties": {
                 }
             }
+        },
+        {
+            "httpMethod": "GET",
+            "name": "Get Site Extension",
+            "template": "/subscriptions/{subscription}/resourceGroups/{resourceGroup}/providers/Microsoft.Web/sites/{siteName}/siteextensions/{siteExtensionName}?api-version={apiVersion}",
+            "params": [
+                {
+                    "name": "Resource Group Name",
+                    "placeHolder": "resourceGroup",
+                    "required": "true"
+                },
+                {
+                    "name": "Website Name",
+                    "placeHolder": "siteName",
+                    "required": "true"
+                },
+                {
+                    "name": "Extension Name",
+                    "placeHolder": "siteExtensionName",
+                    "required": "true"
+                }
+            ]
+        },
+        {
+            "httpMethod": "DELETE",
+            "name": "Delete Site Extension",
+            "template": "/subscriptions/{subscription}/resourceGroups/{resourceGroup}/providers/Microsoft.Web/sites/{siteName}/siteextensions/{siteExtensionName}?api-version={apiVersion}",
+            "params": [
+                {
+                    "name": "Resource Group Name",
+                    "placeHolder": "resourceGroup",
+                    "required": "true"
+                },
+                {
+                    "name": "Website Name",
+                    "placeHolder": "siteName",
+                    "required": "true"
+                },
+                {
+                    "name": "Extension Name",
+                    "placeHolder": "siteExtensionName",
+                    "required": "true"
+                }
+            ]
         }
     ]
 }

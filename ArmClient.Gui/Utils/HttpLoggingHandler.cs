@@ -6,27 +6,29 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Windows.Media;
 
 namespace ArmGuiClient.Utils
 {
     class HttpLoggingHandler : DelegatingHandler
     {
         private readonly bool _verbose;
+        private static Brush _infoBrush = Brushes.SpringGreen;
 
         public HttpLoggingHandler(HttpMessageHandler innerHandler, bool verbose)
             : base(innerHandler)
         {
-            this._verbose = verbose;
+            _verbose = verbose;
         }
 
         protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
             if (_verbose)
             {
-                Logger.InfoLn("---------- Request -----------------------");
+                LogInfoLn("---------- Request -----------------------");
 
-                Logger.InfoLn("{0} {1} HTTP/{2}", request.Method, request.RequestUri.PathAndQuery, request.Version);
-                Logger.InfoLn("Host: {0}", request.RequestUri.Host);
+                LogInfoLn("{0} {1} HTTP/{2}", request.Method, request.RequestUri.PathAndQuery, request.Version);
+                LogInfoLn("Host: {0}", request.RequestUri.Host);
 
                 foreach (var header in request.Headers)
                 {
@@ -39,7 +41,7 @@ namespace ArmGuiClient.Utils
                     {
                         headerVal = String.Join("; ", header.Value);
                     }
-                    Logger.InfoLn("{0}: {1}", header.Key, headerVal);
+                    LogInfoLn("{0}: {1}", header.Key, headerVal);
                 }
 
                 await DumpContent(request.Content);
@@ -54,15 +56,16 @@ namespace ArmGuiClient.Utils
 
             if (_verbose)
             {
-                Logger.InfoLn("---------- Response ({0} ms) ------------", watch.ElapsedMilliseconds);
-                Logger.InfoLn("HTTP/{0} {1} {2}", response.Version, responseStatusCocde, response.StatusCode);
+                LogInfoLn("---------- Response ({0} ms) ------------", watch.ElapsedMilliseconds);
+                LogInfoLn("HTTP/{0} {1} {2}", response.Version, responseStatusCocde, response.StatusCode);
                 foreach (var header in response.Headers)
                 {
-                    Logger.InfoLn("{0}: {1}", header.Key, String.Join("; ", header.Value));
+                    LogInfoLn("{0}: {1}", header.Key, String.Join("; ", header.Value));
                 }
             }
 
-            await DumpContent(response.Content, this.isErrorRequest(responseStatusCocde));
+            await DumpContent(response.Content, isErrorRequest(responseStatusCocde));
+            AlternateInfoBrush();
             return response;
         }
 
@@ -74,19 +77,29 @@ namespace ArmGuiClient.Utils
             }
             var result = await content.ReadAsStringAsync();
 
-            Logger.InfoLn(string.Empty);
+            LogInfoLn(string.Empty);
             if (!string.IsNullOrWhiteSpace(result))
             {
                 dynamic parsedJson = JsonConvert.DeserializeObject(result);
                 string indentedResult = JsonConvert.SerializeObject(parsedJson, Formatting.Indented);
 
-                Logger.WriteLn(indentedResult, isErrorContent ? Logger.ErrorBrush : Logger.InfoBrush);
+                Logger.WriteLn(indentedResult, isErrorContent ? Logger.ErrorBrush : _infoBrush);
             }
         }
 
         private bool isErrorRequest(int responseStatusCode)
         {
             return responseStatusCode >= 400 && responseStatusCode < 600;
+        }
+
+        private static void LogInfoLn(string format, params object[] args)
+        {
+            Logger.WriteLn(string.Format(format, args), _infoBrush);
+        }
+
+        private static void AlternateInfoBrush()
+        {
+            _infoBrush = ((_infoBrush == Brushes.SpringGreen) ? Brushes.MediumSpringGreen : Brushes.SpringGreen);
         }
     }
 }

@@ -18,6 +18,7 @@ namespace ArmGuiClient.Utils
         {
             _outputRTB = textBox;
             _flowDoc = _outputRTB.Document;
+            Clear();
         }
 
         public static void Clear()

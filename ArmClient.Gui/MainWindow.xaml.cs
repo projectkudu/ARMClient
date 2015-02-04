@@ -21,7 +21,7 @@ namespace ArmGuiClient
     /// </summary>
     public partial class MainWindow : Window
     {
-        private static readonly string _tmpPayloadFile = System.IO.Path.Combine(Environment.CurrentDirectory, "ArmGuiClient.Payload.json");
+        private static readonly string _tmpPayloadFile = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ArmGuiClient.Payload.json");
         private GuiPersistentAuthHelper _authHelper;
 
         public MainWindow()
@@ -36,9 +36,24 @@ namespace ArmGuiClient
                 this._authHelper = new GuiPersistentAuthHelper();
 
                 this.InitUI();
+                this.InitKeyboardBindings();
+                ConfigSettingFactory.RegisterOnChangedEvent(() =>
+                {
+                    Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        this.InitUI();
+                    });
+                });
+
                 if (this.CheckIsLogin())
                 {
                     this.PopulateTenant();
+
+                    if (this._authHelper.AzureEnvironments != ConfigSettingFactory.ConfigSettings.GetAzureEnvironments())
+                    {
+                        Logger.WarnLn("Your login session enviroment is '{0}', it is different from your config.json '{1}'",
+                            ConfigSettingFactory.ConfigSettings.TargetEnvironment, this._authHelper.AzureEnvironments);
+                    }
                 }
             }
             catch (Exception ex)
@@ -84,8 +99,12 @@ namespace ArmGuiClient
                 });
             }
             this.ActionCB.SelectedIndex = 0;
-            this.OutputRTB.Document.Blocks.Clear();
 
+            this.HelpBtn_Click(null, null);
+        }
+
+        private void InitKeyboardBindings()
+        {
             // bind keyboard short cuts
             var editPayloadCommand = new RoutedCommand();
             editPayloadCommand.InputGestures.Add(new KeyGesture(Key.W, ModifierKeys.Control, "Ctrl + E"));
@@ -111,6 +130,13 @@ namespace ArmGuiClient
             this.CommandBindings.Add(new CommandBinding(helpCommand, (object sender, ExecutedRoutedEventArgs e) =>
             {
                 this.HelpBtn_Click(null, null);
+            }));
+
+            var actionFocusCommand = new RoutedCommand();
+            actionFocusCommand.InputGestures.Add(new KeyGesture(Key.D, ModifierKeys.Control, "Ctrl + R"));
+            this.CommandBindings.Add(new CommandBinding(actionFocusCommand, (object sender, ExecutedRoutedEventArgs e) =>
+            {
+                this.ActionCB.IsDropDownOpen = true;
             }));
         }
 
@@ -154,7 +180,8 @@ namespace ArmGuiClient
 
         private bool CheckIsLogin()
         {
-            if (this._authHelper != null && this._authHelper.IsCacheValid())
+            if (this._authHelper != null
+                && this._authHelper.IsCacheValid())
             {
                 this.LoginBtn.IsEnabled = false;
                 this.LogoutBtn.IsEnabled = true;
@@ -196,7 +223,10 @@ namespace ArmGuiClient
 
             // api version
             ComboBoxItem apiItem = this.ApiVersionCB.SelectedValue as ComboBoxItem;
-            cmd = cmd.Replace("{apiVersion}", apiItem.Content as string);
+            if (apiItem != null)
+            {
+                cmd = cmd.Replace("{apiVersion}", apiItem.Content as string);
+            }
 
             // subscription
             string subscriptionId = this.SubscriptionCB.SelectedValue as string;
@@ -275,8 +305,9 @@ namespace ArmGuiClient
             try
             {
                 ConfigActioin action = this.GetSelectedAction();
-                if (string.Equals("get", action.HttpMethod, StringComparison.OrdinalIgnoreCase) ||
-                    string.Equals("delete", action.HttpMethod, StringComparison.OrdinalIgnoreCase))
+                if (action == null
+                    || string.Equals("get", action.HttpMethod, StringComparison.OrdinalIgnoreCase)
+                    || string.Equals("delete", action.HttpMethod, StringComparison.OrdinalIgnoreCase))
                 {
                     return;
                 }
@@ -293,6 +324,7 @@ namespace ArmGuiClient
             catch (Exception ex)
             {
                 Logger.ErrorLn("Editor: '{0}'", ConfigSettingFactory.ConfigSettings.Editor);
+                Logger.ErrorLn("Payload file: '{0}'", _tmpPayloadFile);
                 Logger.ErrorLn("{0} {1}", ex.Message, ex.StackTrace);
             }
         }
@@ -410,16 +442,17 @@ namespace ArmGuiClient
         private void HelpBtn_Click(object sender, RoutedEventArgs e)
         {
             Logger.InfoLn(string.Empty);
-            Logger.InfoLn("*******************************************************************************************************************");
+            Logger.InfoLn("**************************************************************************************************************");
+            Logger.InfoLn("> Ctrl + D to open action dropdown");
             Logger.InfoLn("> Ctrl + H to print help content");
-            Logger.InfoLn("> Ctrl + P to edit config.json");
+            Logger.InfoLn("> Ctrl + P to edit config.json, ArmGuiClient will auto-reload config.json if there is any chagnes.");
             Logger.InfoLn("> Ctrl + W to edit payload");
             Logger.InfoLn("> Ctrl + F8 to clear console");
             Logger.InfoLn("> Ctrl + Enter to run command");
-            Logger.InfoLn(@"> For more information, please visit: https://github.com/projectkudu/ARMClient");
-            Logger.InfoLn("*******************************************************************************************************************");
+            Logger.InfoLn(@"> For more information, please visit: https://github.com/projectkudu/ARMClient/wiki/ArmGuiClient");
+            Logger.InfoLn(@"> Command promte version: https://github.com/projectkudu/ARMClient");
+            Logger.InfoLn("**************************************************************************************************************");
             Logger.InfoLn(string.Empty);
         }
-
     }
 }
