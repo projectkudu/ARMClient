@@ -60,16 +60,16 @@ namespace ARMClient
                         var tenantId = _parameters.Get(1, requires: false);
                         _parameters.ThrowIfUnknown();
 
+                        if (tenantId != null && tenantId.StartsWith("ey"))
+                        {
+                            DumpClaims(tenantId);
+                            return 0;
+                        }
+
                         EnsureTokenCache(persistentAuthHelper);
 
                         if (tenantId != null)
                         {
-                            if (tenantId.StartsWith("ey"))
-                            {
-                                DumpClaims(tenantId);
-                                return 0;
-                            }
-
                             EnsureGuidFormat(tenantId);
                         }
 
