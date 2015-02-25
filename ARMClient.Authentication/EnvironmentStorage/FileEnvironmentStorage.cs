@@ -65,7 +65,7 @@ namespace ARMClient.Authentication.EnvironmentStorage
 
         private void ClearAll()
         {
-            foreach (var filePath in Directory.GetFiles(ProtectedFile.GetCachePath(), "*", SearchOption.TopDirectoryOnly))
+            foreach (var filePath in Directory.GetFiles(Utils.GetDefaultCachePath(), "*", SearchOption.TopDirectoryOnly))
             {
                 File.Delete(filePath);
             }

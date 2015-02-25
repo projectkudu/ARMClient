@@ -57,7 +57,7 @@ namespace ARMClient.Authentication.TokenStorage
 
         public void ClearCache()
         {
-            foreach (var filePath in Directory.GetFiles(ProtectedFile.GetCachePath(), "*token*", SearchOption.TopDirectoryOnly))
+            foreach (var filePath in Directory.GetFiles(Utils.GetDefaultCachePath(), "*token*", SearchOption.TopDirectoryOnly))
             {
                 File.Delete(filePath);
             }

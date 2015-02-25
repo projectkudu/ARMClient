@@ -33,7 +33,7 @@ namespace ARMClient
                         var env = _parameters.Get(1, requires: false);
                         _parameters.ThrowIfUnknown();
 
-                        persistentAuthHelper.AzureEnvironments = env == null ? AzureEnvironments.Prod :
+                        persistentAuthHelper.AzureEnvironments = env == null ? Utils.GetDefaultEnv() :
                             (AzureEnvironments)Enum.Parse(typeof(AzureEnvironments), args[1], ignoreCase: true);
                         persistentAuthHelper.AcquireTokens().Wait();
                         return 0;
@@ -95,7 +95,7 @@ namespace ARMClient
                         }
                         _parameters.ThrowIfUnknown();
 
-                        persistentAuthHelper.AzureEnvironments = AzureEnvironments.Prod;
+                        persistentAuthHelper.AzureEnvironments = Utils.GetDefaultEnv();
                         var cacheInfo = persistentAuthHelper.GetTokenBySpn(tenantId, appId, appKey).Result;
                         return 0;
                     }
@@ -109,7 +109,7 @@ namespace ARMClient
                         }
                         _parameters.ThrowIfUnknown();
 
-                        persistentAuthHelper.AzureEnvironments = AzureEnvironments.Prod;
+                        persistentAuthHelper.AzureEnvironments = Utils.GetDefaultEnv();
                         var cacheInfo = persistentAuthHelper.GetTokenByUpn(username, password).Result;
                         return 0;
                     }
@@ -119,7 +119,7 @@ namespace ARMClient
                         || String.Equals(verb, "post", StringComparison.OrdinalIgnoreCase))
                     {
                         var path = _parameters.Get(1, keyName: "url");
-                        var verbose = _parameters.Get("-verbose", requires: false) != null;
+                        var verbose = _parameters.Get("-verbose", requires: false) != null || Utils.GetDefaultVerbose();
                         if (!verbose)
                         {
                             Trace.Listeners.Clear();
@@ -202,7 +202,7 @@ namespace ARMClient
                 return ret;
             }
 
-            var env = persistentAuthHelper.IsCacheValid() ? persistentAuthHelper.AzureEnvironments : AzureEnvironments.Prod;
+            var env = persistentAuthHelper.IsCacheValid() ? persistentAuthHelper.AzureEnvironments : Utils.GetDefaultEnv();
             var parts = path.Split(new[] { '/', '?' }, StringSplitOptions.RemoveEmptyEntries);
             if (parts.Length <= 0
                 || String.Equals(parts[0], "tenants", StringComparison.OrdinalIgnoreCase)

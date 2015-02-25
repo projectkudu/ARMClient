@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
+using System.IO;
 
 namespace ARMClient.Authentication.Utilities
 {
@@ -15,6 +16,22 @@ namespace ARMClient.Authentication.Utilities
         public static TraceListener Trace
         {
             get { return _traceListener ?? DefaultTraceListener.Default; }
+        }
+
+        public static AzureEnvironments GetDefaultEnv()
+        {
+            AzureEnvironments env;
+            return Enum.TryParse<AzureEnvironments>(Environment.GetEnvironmentVariable("ARMCLIENT_ENV"), true, out env) ? env : AzureEnvironments.Prod;
+        }
+
+        public static string GetDefaultCachePath()
+        {
+            return Environment.GetEnvironmentVariable("ARMCLIENT_CACHEPATH") ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".arm");
+        }
+
+        public static bool GetDefaultVerbose()
+        {
+            return Environment.GetEnvironmentVariable("ARMCLIENT_VERBOSE") == "1";
         }
 
         public static void SetTraceListener(TraceListener listener)
