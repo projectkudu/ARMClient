@@ -116,7 +116,8 @@ namespace ARMClient
                     else if (String.Equals(verb, "get", StringComparison.OrdinalIgnoreCase)
                         || String.Equals(verb, "delete", StringComparison.OrdinalIgnoreCase)
                         || String.Equals(verb, "put", StringComparison.OrdinalIgnoreCase)
-                        || String.Equals(verb, "post", StringComparison.OrdinalIgnoreCase))
+                        || String.Equals(verb, "post", StringComparison.OrdinalIgnoreCase)
+                        || String.Equals(verb, "patch", StringComparison.OrdinalIgnoreCase))
                     {
                         var path = _parameters.Get(1, keyName: "url");
                         var verbose = _parameters.Get("-verbose", requires: false) != null || Utils.GetDefaultVerbose();

@@ -86,6 +86,14 @@ namespace ARMClient.Authentication.Utilities
                 {
                     response = await client.PutAsync(uri, content);
                 }
+                else if (String.Equals(verb, "patch", StringComparison.OrdinalIgnoreCase))
+                {
+                    using (var message = new HttpRequestMessage(new HttpMethod("PATCH"), uri))
+                    {
+                        message.Content = content;
+                        response = await client.SendAsync(message).ConfigureAwait(false);
+                    }
+                }
                 else
                 {
                     throw new InvalidOperationException(String.Format("Invalid http verb {0}!", verb));

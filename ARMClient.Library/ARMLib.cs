@@ -101,6 +101,13 @@ namespace ARMClient.Library
             return await httpResponse.Content.ReadAsAsync<T>().ConfigureAwait(false);
         }
 
+        public async Task<T> PatchAsync<T>(params object[] args)
+        {
+            var httpResponse = await HttpInvoke("Patch", args).ConfigureAwait(false);
+            httpResponse.EnsureSuccessStatusCode();
+            return await httpResponse.Content.ReadAsAsync<T>().ConfigureAwait(false);
+        }
+
         public async Task<T> DeleteAsync<T>()
         {
             var httpResponse = await HttpInvoke("Delete", Enumerable.Empty<object>().ToArray()).ConfigureAwait(false);
@@ -181,6 +188,14 @@ namespace ARMClient.Library
                 else if (String.Equals(verb, "put", StringComparison.OrdinalIgnoreCase))
                 {
                     response = await client.PutAsync(uri, new StringContent(payload ?? String.Empty, Encoding.UTF8, Constants.JsonContentType)).ConfigureAwait(false);
+                }
+                else if (String.Equals(verb, "patch", StringComparison.OrdinalIgnoreCase))
+                {
+                    using (var message = new HttpRequestMessage(new HttpMethod("PATCH"), uri))
+                    {
+                        message.Content = new StringContent(payload ?? String.Empty, Encoding.UTF8, Constants.JsonContentType);
+                        response = await client.SendAsync(message).ConfigureAwait(false);
+                    }
                 }
                 else
                 {
