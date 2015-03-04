@@ -284,7 +284,7 @@ namespace ARMClient
 
             Console.WriteLine();
             Console.WriteLine("Call ARM api");
-            Console.WriteLine("    ARMClient.exe [get|post|put|delete] [url] (<@file|content>) (-verbose)");
+            Console.WriteLine("    ARMClient.exe [get|post|put|patch|delete] [url] (<@file|content>) (-verbose)");
 
             Console.WriteLine();
             Console.WriteLine("Copy token to clipboard");
