@@ -280,7 +280,7 @@ namespace ARMClient
 
             Console.WriteLine();
             Console.WriteLine("Login and get tokens");
-            Console.WriteLine("    ARMClient.exe login");
+            Console.WriteLine("    ARMClient.exe login [environment name]");
 
             Console.WriteLine();
             Console.WriteLine("Call ARM api");

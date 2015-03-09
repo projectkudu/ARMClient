@@ -10,7 +10,7 @@ This [blog post](http://blog.davidebbo.com/2015/01/azure-resource-manager-client
 Check out [wiki](https://github.com/projectkudu/ARMClient/wiki) for more details.
 
     Login and get tokens
-        ARMClient.exe login
+        ARMClient.exe login [environment name]
     
     Call ARM api
         ARMClient.exe [get|post|put|delete] [url] [@file|json] (-verbose)
