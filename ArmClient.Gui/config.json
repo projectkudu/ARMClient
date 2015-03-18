@@ -1,12 +1,23 @@
 ﻿{
-    "TargetEnvironment": "Prod",
-    "ApiVersions": [ "2014-04-01", "2014-11-01" ],
+    "TargetEnvironment": "Dogfood",
+    "ApiVersions": [ "2014-04-01", "2014-11-01", "2015-02-01-privatepreview", "2015-02-01" ],
     "Verbose": "true",
     "Editor": "%windir%\\system32\\notepad.exe",
     "AutoPromptEditor": "true",
-    "DefaultValues": {
-        "placeholderFromParamsOrPayload": "default value for params or payload"
-    },
+    "Profiles": [
+        {
+            "Name": "shrimpy",
+            "TargetEnvironment":  "Prod",
+            "DefaultValues": {
+            }
+        },
+        {
+            "Name": "testAccount",
+            "TargetEnvironment": "Dogfood",
+            "DefaultValues": {
+            }
+        }
+    ],
     "Actioins": [
         {
             "httpMethod": "GET",
@@ -101,6 +112,37 @@
                 "location": "{location}",
                 "properties": {
                     "serverFarm": "{serverFarm}"
+                }
+            }
+        },
+        {
+            "httpMethod": "PUT",
+            "name": "Create Website ARM",
+            "template": "/subscriptions/{subscription}/resourceGroups/{resourceGroup}/providers/Microsoft.Resources/Deployments/{deploymentName}?api-version={apiVersion}",
+            "params": [
+                {
+                    "name": "Resource Group Name",
+                    "placeHolder": "resourceGroup",
+                    "required": "true"
+                },
+                {
+                    "name": "Deployment Name",
+                    "placeHolder": "deploymentName",
+                    "required": "true"
+                }
+            ],
+            payload: {
+                "properties": {
+                    "templateLink": {
+                        "uri": "https://raw.githubusercontent.com/shrimpy/AzureWebsitesSamples/master/ARMTemplates/WebSiteWithSiteExtension-private.json",
+                        "contentVersion": "1.0.0.0"
+                    },
+                    "mode": "Incremental",
+                    "parameters": {
+                        "siteName": { "value": "{siteName}" },
+                        "hostingPlanName": { "value": "{hostingPlanName}" },
+                        "siteLocation": { "value": "{location}" }
+                    }
                 }
             }
         },
@@ -204,6 +246,23 @@
                 {
                     "name": "Extension Name",
                     "placeHolder": "siteExtensionName",
+                    "required": "true"
+                }
+            ]
+        },
+        {
+            "httpMethod": "GET",
+            "name": "Get ARM Operation",
+            "template": "/subscriptions/{subscription}/resourceGroups/{resourceGroup}/providers/Microsoft.Resources/Deployments/{deploymentName}/Operations?api-version={apiVersion}",
+            "params": [
+                {
+                    "name": "Resource Group Name",
+                    "placeHolder": "resourceGroup",
+                    "required": "true"
+                },
+                {
+                    "name": "Deployment Name",
+                    "placeHolder": "deploymentName",
                     "required": "true"
                 }
             ]

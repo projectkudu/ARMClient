@@ -22,17 +22,19 @@
             </Grid.RowDefinitions>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition></ColumnDefinition>
-                <ColumnDefinition Width="150"></ColumnDefinition>
+                <ColumnDefinition Width="100"></ColumnDefinition>
+                <ColumnDefinition Width="100"></ColumnDefinition>
                 <ColumnDefinition Width="25"></ColumnDefinition>
-                <ColumnDefinition Width="60"></ColumnDefinition>
-                <ColumnDefinition Width="60"></ColumnDefinition>
+                <ColumnDefinition Width="50"></ColumnDefinition>
+                <ColumnDefinition Width="50"></ColumnDefinition>
             </Grid.ColumnDefinitions>
             
             <ComboBox x:Name="SubscriptionCB" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Width="Auto" Height="Auto" SelectionChanged="SubscriptionCB_SelectionChanged" Margin="2" Grid.Column="0" Grid.Row="0"/>
             <ComboBox x:Name="ApiVersionCB" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Width="Auto" Height="Auto" SelectedIndex="0" SelectionChanged="ApiVersionCB_SelectionChanged" Margin="2" Grid.Column="1" Grid.Row="0"/>
-            <Button Content="?" x:Name="HelpBtn" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Width="Auto" Height="Auto" Click="HelpBtn_Click" Margin="2" Grid.Column="2" Grid.Row="0"/>
-            <Button x:Name="LoginBtn" Content="Login" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Width="Auto" Height="Auto" Click="LoginBtn_Click" Margin="2" Grid.Column="3" Grid.Row="0"/>
-            <Button x:Name="LogoutBtn" Content="Logout" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Width="Auto" Height="Auto" Click="LogoutBtn_Click" Margin="2" Grid.Column="4" Grid.Row="0"/>
+            <ComboBox x:Name="ProfileCB" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Width="Auto" Height="Auto" SelectedIndex="0" SelectionChanged="ProfileCB_SelectionChanged" Margin="2" Grid.Column="2" Grid.Row="0"/>
+            <Button Content="?" x:Name="HelpBtn" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Width="Auto" Height="Auto" Click="HelpBtn_Click" Margin="2" Grid.Column="3" Grid.Row="0"/>
+            <Button x:Name="LoginBtn" Content="Login" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Width="Auto" Height="Auto" Click="LoginBtn_Click" Margin="2" Grid.Column="4" Grid.Row="0"/>
+            <Button x:Name="LogoutBtn" Content="Logout" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Width="Auto" Height="Auto" Click="LogoutBtn_Click" Margin="2" Grid.Column="5" Grid.Row="0"/>
         </Grid>
 
         <ComboBox x:Name="ActionCB" HorizontalAlignment="Left" VerticalAlignment="Top" Width="210" Height="25" SelectionChanged="ActionCB_SelectionChanged" Grid.Column="0" Grid.Row="1"/>

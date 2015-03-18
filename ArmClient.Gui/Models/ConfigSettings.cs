@@ -43,6 +43,15 @@ namespace ArmGuiClient.Models
         }
     }
 
+    public class Profile
+    {
+        public string Name { get; set; }
+
+        public Dictionary<string, object> DefaultValues { get; set; }
+
+        public string TargetEnvironment { get; set; }
+    }
+
     public class ConfigSettings
     {
         private string _editor;
@@ -74,6 +83,7 @@ namespace ArmGuiClient.Models
 
         public bool AutoPromptEditor { get; set; }
 
+        [ScriptIgnore]
         public Dictionary<string, object> DefaultValues
         {
             get
@@ -90,6 +100,8 @@ namespace ArmGuiClient.Models
                 this._defaultValues = value;
             }
         }
+
+        public Profile[] Profiles { get; set; }
 
         public ConfigActioin[] Actioins { get; set; }
 

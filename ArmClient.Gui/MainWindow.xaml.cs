@@ -1,8 +1,5 @@
-﻿using ARMClient.Authentication;
-using ARMClient.Authentication.Contracts;
-using ArmGuiClient.Models;
-using ArmGuiClient.Utils;
-using System;
+﻿using System;
+using System.Linq;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -12,6 +9,10 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using ARMClient.Authentication;
+using ARMClient.Authentication.Contracts;
+using ArmGuiClient.Models;
+using ArmGuiClient.Utils;
 using AuthUtils = ARMClient.Authentication.Utilities.Utils;
 
 namespace ArmGuiClient
@@ -82,6 +83,29 @@ namespace ArmGuiClient
                 });
             }
             this.ApiVersionCB.SelectedIndex = 0;
+
+            this.ProfileCB.Items.Clear();
+            if (ConfigSettingFactory.ConfigSettings.Profiles != null && ConfigSettingFactory.ConfigSettings.Profiles.Length > 0)
+            {
+                ConfigSettingFactory.ConfigSettings.TargetEnvironment = ConfigSettingFactory.ConfigSettings.Profiles[0].TargetEnvironment;
+
+                foreach (var profile in ConfigSettingFactory.ConfigSettings.Profiles)
+                {
+                    this.ProfileCB.Items.Add(new ComboBoxItem()
+                    {
+                        Content = profile.Name
+                    });
+                }
+
+                this.ProfileCB.SelectedIndex = 0;
+            }
+            else
+            {
+                this.ProfileCB.Items.Add(new ComboBoxItem()
+                {
+                    Content = "No Profile"
+                });
+            }
 
             // populate actions
             if (ConfigSettingFactory.ConfigSettings.Actioins == null
@@ -274,21 +298,32 @@ namespace ArmGuiClient
         {
             try
             {
-                this.ExecuteBtn.IsEnabled = false;
-                string path = this.CmdText.Text;
-                string subscriptionId = this.SubscriptionCB.SelectedValue as string;
-                ConfigActioin action = this.GetSelectedAction();
-                Uri uri = AuthUtils.EnsureAbsoluteUri(path, this._authHelper);
-                var cacheInfo = await this._authHelper.GetToken(subscriptionId, null);
-                var handler = new HttpLoggingHandler(new HttpClientHandler(), ConfigSettingFactory.ConfigSettings.Verbose);
-                HttpContent payload = null;
-                if (!string.Equals("get", action.HttpMethod, StringComparison.OrdinalIgnoreCase)
-                    && !string.Equals("delete", action.HttpMethod, StringComparison.OrdinalIgnoreCase))
+                if (!this._authHelper.IsCacheValid())
                 {
-                    payload = new StringContent(File.ReadAllText(_tmpPayloadFile), Encoding.UTF8, Constants.JsonContentType);
+                    Logger.WarnLn("Login session corrputed");
+                    this._authHelper.ClearTokenCache();
+                    this.CheckIsLogin();
+                    await this._authHelper.AcquireTokens();
+                    this.PopulateTenant();
                 }
+                else
+                {
+                    this.ExecuteBtn.IsEnabled = false;
+                    string path = this.CmdText.Text;
+                    string subscriptionId = this.SubscriptionCB.SelectedValue as string;
+                    ConfigActioin action = this.GetSelectedAction();
+                    Uri uri = AuthUtils.EnsureAbsoluteUri(path, this._authHelper);
+                    var cacheInfo = await this._authHelper.GetToken(subscriptionId, null);
+                    var handler = new HttpLoggingHandler(new HttpClientHandler(), ConfigSettingFactory.ConfigSettings.Verbose);
+                    HttpContent payload = null;
+                    if (!string.Equals("get", action.HttpMethod, StringComparison.OrdinalIgnoreCase)
+                        && !string.Equals("delete", action.HttpMethod, StringComparison.OrdinalIgnoreCase))
+                    {
+                        payload = new StringContent(File.ReadAllText(_tmpPayloadFile), Encoding.UTF8, Constants.JsonContentType);
+                    }
 
-                await AuthUtils.HttpInvoke(uri, cacheInfo, action.HttpMethod, handler, payload);
+                    await AuthUtils.HttpInvoke(uri, cacheInfo, action.HttpMethod, handler, payload);
+                }
             }
             catch (Exception ex)
             {
@@ -388,7 +423,7 @@ namespace ArmGuiClient
         {
             this._authHelper.ClearTokenCache();
             this.CheckIsLogin();
-            Logger.WarnLn("Goodbye!");
+            Logger.WarnLn("Signing out. Goodbye!");
         }
 
         private async void ExecuteBtn_Click(object sender, RoutedEventArgs e)
@@ -399,6 +434,36 @@ namespace ArmGuiClient
         private void ApiVersionCB_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             this.UpdateCmdText();
+        }
+
+        private void ProfileCB_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            ComboBoxItem profileItem = this.ProfileCB.SelectedValue as ComboBoxItem;
+            if (profileItem == null)
+            {
+                return;
+            }
+
+            string selectedProfile = profileItem.Content as string;
+            var profile = ConfigSettingFactory.ConfigSettings.Profiles.FirstOrDefault(p => string.Equals(p.Name, selectedProfile, StringComparison.Ordinal));
+
+            if (profile != null)
+            {
+                if (!string.Equals(ConfigSettingFactory.ConfigSettings.TargetEnvironment, profile.TargetEnvironment, StringComparison.OrdinalIgnoreCase))
+                {
+                    Logger.WarnLn("Select profile is running against '{0}', different from current profile that running against '{1}'", profile.TargetEnvironment, ConfigSettingFactory.ConfigSettings.TargetEnvironment);
+                    ConfigSettingFactory.ConfigSettings.TargetEnvironment = profile.TargetEnvironment;
+                    this.LogoutBtn_Click(null, null);
+                    this.LoginBtn_Click(null, null);
+                }
+                else
+                {
+
+                    ConfigSettingFactory.ConfigSettings.DefaultValues = profile.DefaultValues;
+                    this.PopulateParamsUI(this.GetSelectedAction());
+                    this.UpdateCmdText();
+                }
+            }
         }
 
         private void ExecuteEditPayloadCommand(object sender, ExecutedRoutedEventArgs e)

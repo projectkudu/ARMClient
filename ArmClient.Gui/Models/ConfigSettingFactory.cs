@@ -13,8 +13,7 @@ namespace ArmGuiClient.Models
         private static FileSystemWatcher _configWatcher;
         private static Timer _refreshTimer;
         private static Action _externalEventWhenConfigChanged;
-
-
+        
         public static void Init()
         {
             _configWatcher = new FileSystemWatcher();
