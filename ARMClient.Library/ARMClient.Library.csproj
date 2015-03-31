@@ -52,6 +52,7 @@
       <Link>Properties\AssemblyInfo.cs</Link>
     </Compile>
     <Compile Include="ARMLib.cs" />
+    <Compile Include="CsmTemplate.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\ARMClient.Authentication\ARMClient.Authentication.csproj">
