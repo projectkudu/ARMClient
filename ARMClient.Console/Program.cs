@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -88,15 +89,32 @@ namespace ARMClient
                         var appId = _parameters.Get(2, keyName: "appId");
                         EnsureGuidFormat(appId);
 
+                        X509Certificate2 certificate = null;
                         var appKey = _parameters.Get(3, keyName: "appKey", requires: false);
                         if (appKey == null)
                         {
                             appKey = PromptForPassword("appKey");
                         }
+                        else
+                        {
+                            if (File.Exists(appKey))
+                            {
+                                var password = _parameters.Get(4, keyName: "password", requires: false);
+                                if (password == null)
+                                {
+                                    password = PromptForPassword("password");
+                                }
+
+                                certificate = new X509Certificate2(appKey, password);
+                            }
+                        }
+
                         _parameters.ThrowIfUnknown();
 
                         persistentAuthHelper.AzureEnvironments = Utils.GetDefaultEnv();
-                        var cacheInfo = persistentAuthHelper.GetTokenBySpn(tenantId, appId, appKey).Result;
+                        var cacheInfo = certificate != null ?
+                            persistentAuthHelper.GetTokenBySpn(tenantId, appId, certificate).Result :
+                            persistentAuthHelper.GetTokenBySpn(tenantId, appId, appKey).Result;
                         return 0;
                     }
                     else if (String.Equals(verb, "upn", StringComparison.OrdinalIgnoreCase))
@@ -293,6 +311,7 @@ namespace ARMClient
             Console.WriteLine();
             Console.WriteLine("Get token by ServicePrincipal");
             Console.WriteLine("    ARMClient.exe spn [tenant] [appId] (appKey)");
+            Console.WriteLine("    ARMClient.exe spn [tenant] [appId] [certificate] (password)");
 
             Console.WriteLine();
             Console.WriteLine("Get token by Username/Password");

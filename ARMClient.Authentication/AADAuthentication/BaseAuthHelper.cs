@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
+using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
 using ARMClient.Authentication.Contracts;
@@ -118,6 +119,22 @@ namespace ARMClient.Authentication.AADAuthentication
             return cacheInfo;
         }
 
+        public async Task<TokenCacheInfo> GetTokenBySpn(string tenantId, string appId, X509Certificate2 certificate)
+        {
+            this.TokenStorage.ClearCache();
+            this.TenantStorage.ClearCache();
+
+            var tokenCache = new CustomTokenCache();
+            var cacheInfo = GetAuthorizationResultBySpn(tokenCache, tenantId, appId, certificate, Constants.CSMResource);
+
+            var tenantCache = await GetTokenForTenants(tokenCache, cacheInfo, appId: appId, appKey: "_certificate_");
+
+            this.TokenStorage.SaveCache(tokenCache);
+            this.TenantStorage.SaveCache(tenantCache);
+
+            return cacheInfo;
+        }
+
         public async Task<TokenCacheInfo> GetTokenByUpn(string username, string password)
         {
             this.TokenStorage.ClearCache();
@@ -168,6 +185,10 @@ namespace ARMClient.Authentication.AADAuthentication
 
                     throw;
                 }
+            }
+            else if (!String.IsNullOrEmpty(cacheInfo.AppId) && cacheInfo.AppKey == "_certificate_")
+            {
+                throw new InvalidOperationException("Unable to refresh expired token!  Try login with certificate again.");
             }
             else if (!String.IsNullOrEmpty(cacheInfo.AppId) && !String.IsNullOrEmpty(cacheInfo.AppKey))
             {
@@ -326,6 +347,28 @@ namespace ARMClient.Authentication.AADAuthentication
             return cacheInfo;
         }
 
+        protected TokenCacheInfo GetAuthorizationResultBySpn(CustomTokenCache tokenCache, string tenantId, string appId, X509Certificate2 certificate, string resource)
+        {
+            TokenCacheInfo found;
+            if (tokenCache.TryGetValue(tenantId, resource, out found))
+            {
+                return found;
+            }
+
+            var azureEnvironment = this.AzureEnvironments;
+            var authority = String.Format("{0}/{1}", Constants.AADLoginUrls[(int)azureEnvironment], tenantId);
+            var context = new AuthenticationContext(
+                authority: authority,
+                validateAuthority: true,
+                tokenCache: tokenCache);
+            var credential = new ClientAssertionCertificate(appId, certificate);
+            var result = context.AcquireToken(resource, credential);
+
+            var cacheInfo = new TokenCacheInfo(tenantId, appId, "_certificate_", resource, result);
+            tokenCache.Add(cacheInfo);
+            return cacheInfo;
+        }
+
         protected TokenCacheInfo GetAuthorizationResultByUpn(CustomTokenCache tokenCache, string tenantId, string username, string password, string resource)
         {
             TokenCacheInfo found;
@@ -389,7 +432,11 @@ namespace ARMClient.Authentication.AADAuthentication
                 try
                 {
                     TokenCacheInfo aadToken = null;
-                    if (!String.IsNullOrEmpty(appId) && !String.IsNullOrEmpty(appKey))
+                    if (!String.IsNullOrEmpty(appId) && appKey == "_certificate_")
+                    {
+                        Utils.Trace.WriteLine(string.Format("AppId: {0}, Tenant: {1}", appId, tenantId));
+                    }
+                    else if (!String.IsNullOrEmpty(appId) && !String.IsNullOrEmpty(appKey))
                     {
                         aadToken = GetAuthorizationResultBySpn(tokenCache, tenantId: tenantId, appId: appId, appKey: appKey, resource: Constants.AADGraphUrls[(int)AzureEnvironments]);
                     }
@@ -401,20 +448,24 @@ namespace ARMClient.Authentication.AADAuthentication
                     {
                         aadToken = await GetAuthorizationResult(tokenCache, tenantId: tenantId, user: cacheInfo.DisplayableId, resource: Constants.AADGraphUrls[(int)AzureEnvironments]);
                     }
-                    var details = await GetTenantDetail(aadToken, tenantId);
-                    info.displayName = details.displayName;
-                    info.domain = details.verifiedDomains.First(d => d.@default).name;
 
-                    if (!String.IsNullOrEmpty(appId) && !String.IsNullOrEmpty(appKey))
+                    if (aadToken != null)
                     {
-                        Utils.Trace.WriteLine(string.Format("AppId: {0}, Tenant: {1} ({2})", appId, tenantId, details.verifiedDomains.First(d => d.@default).name));
-                    }
-                    else
-                    {
-                        Utils.Trace.WriteLine(string.Format("User: {0}, Tenant: {1} ({2})", result.DisplayableId, tenantId, details.verifiedDomains.First(d => d.@default).name));
+                        var details = await GetTenantDetail(aadToken, tenantId);
+                        info.displayName = details.displayName;
+                        info.domain = details.verifiedDomains.First(d => d.@default).name;
+
+                        if (!String.IsNullOrEmpty(appId) && !String.IsNullOrEmpty(appKey))
+                        {
+                            Utils.Trace.WriteLine(string.Format("AppId: {0}, Tenant: {1} ({2})", appId, tenantId, details.verifiedDomains.First(d => d.@default).name));
+                        }
+                        else
+                        {
+                            Utils.Trace.WriteLine(string.Format("User: {0}, Tenant: {1} ({2})", result.DisplayableId, tenantId, details.verifiedDomains.First(d => d.@default).name));
+                        }
                     }
                 }
-                catch (Exception ex)
+                catch (Exception)
                 {
                     if (!String.IsNullOrEmpty(appId) && !String.IsNullOrEmpty(appKey))
                     {
