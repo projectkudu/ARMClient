@@ -37,30 +37,31 @@ Example
 =========
 
 ```C#
-// This example prints the names of all resrouceGroups that don't
+// This example prints the names of all resourceGroups that don't
 // have sites under a certain subscription
 
 private static async Task Run()
 {
-    var armClient = ARMClient.GetDynamicClient(apiVersion: "2014-04-01",
-                                authHelper: new AuthHelper(AzureEnvironments.Prod));
+    
+	var armClient = ARMLib.GetDynamicClient("2014-04-01", AzureEnvironments.Prod).ConfigureLogin(LoginType.Upn,"username","password");
+            
 
-    var resrouceGroups = await armClient.Subscriptions["{subscriptionId}"]
+    var resourceGroups = await armClient.Subscriptions["{subscriptionId}"]
                                         .ResourceGroups
                                         .GetAsync<JObject>();
 
-    foreach (var resrouceGroup in resrouceGroups.value)
+    foreach (var resourceGroup in resourceGroups.value)
     {
         var sites = (Site[]) await armClient.Subscriptions["{subscriptionId}"]
-                                            .ResourceGroups[resrouceGroup.name]
+                                            .ResourceGroups[resourceGroup.name]
                                             .Providers["Microsoft.Web"]
                                             .Sites
                                             .GetAsync<Site[]>();
 
         if (sites.Length == 0)
         {
-            Console.WriteLine("ResrouceGroup: {0} Doesn't contain any websites!",
-                              resrouceGroup.name);
+            Console.WriteLine("ResourceGroup: {0} Doesn't contain any websites!",
+                              resourceGroup.name);
         }
     }
 }
