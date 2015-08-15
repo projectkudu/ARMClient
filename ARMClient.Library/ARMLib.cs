@@ -75,6 +75,11 @@ namespace ARMClient.Library
 
         private bool TryHandleDynamicCall(string name, out object result)
         {
+            if (this._tokenCacheInfo == null)
+            {
+                GetAuthorizationHeader().Wait();
+            }
+
             var url = string.Format("{0}/{1}", _url, name);
             result = new ARMLib(this, url, this._query);
             return true;
@@ -132,6 +137,7 @@ namespace ARMClient.Library
                         this._password = args[2].ToString();
                         break;
                 }
+                GetAuthorizationHeader().Wait();
                 result = this;
             }
             else if (binder.Name.Equals("Query", StringComparison.OrdinalIgnoreCase))
@@ -217,7 +223,6 @@ namespace ARMClient.Library
                 {
                     case LoginType.Interactive:
                         await this._authHelper.AcquireTokens().ConfigureAwait(false);
-
                         break;
                     case LoginType.Spn:
                         await this._authHelper.GetTokenBySpn(this._tenantId, this._appId, this._appKey).ConfigureAwait(false);
