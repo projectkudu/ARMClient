@@ -85,7 +85,6 @@ namespace ARMClient
                     else if (String.Equals(verb, "spn", StringComparison.OrdinalIgnoreCase))
                     {
                         var tenantId = _parameters.Get(1, keyName: "tenant");
-                        EnsureGuidFormat(tenantId);
                         var appId = _parameters.Get(2, keyName: "appId");
                         EnsureGuidFormat(appId);
 
