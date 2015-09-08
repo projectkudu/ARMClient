@@ -10,8 +10,6 @@ namespace ARMClient.Authentication.TokenStorage
     internal class FileTokenStorage : ITokenStorage
     {
         private const string _cacheFileName = "cache_tokens.dat";
-        private const string _recentARMFileName = "recent_token_arm.dat";
-        private const string _recentAADFileName = "recent_token_aad.dat";
 
         public CustomTokenCache GetCache()
         {
@@ -33,7 +31,7 @@ namespace ARMClient.Authentication.TokenStorage
 
         public TokenCacheInfo GetRecentToken(string resource)
         {
-            var file = ProtectedFile.GetCacheFile(resource == Constants.CSMResource ? _recentARMFileName : _recentAADFileName);
+            var file = ProtectedFile.GetCacheFile(GetRecentTokenFileName(resource));
             if (!File.Exists(file))
             {
                 return null;
@@ -44,7 +42,7 @@ namespace ARMClient.Authentication.TokenStorage
 
         public void SaveRecentToken(TokenCacheInfo cacheInfo, string resource)
         {
-            var file = ProtectedFile.GetCacheFile(resource == Constants.CSMResource ? _recentARMFileName : _recentAADFileName);
+            var file = ProtectedFile.GetCacheFile(GetRecentTokenFileName(resource));
             var json = JObject.FromObject(cacheInfo);
             ProtectedFile.WriteAllText(ProtectedFile.GetCacheFile(file), json.ToString());
         }
@@ -61,6 +59,12 @@ namespace ARMClient.Authentication.TokenStorage
             {
                 File.Delete(filePath);
             }
+        }
+
+        private string GetRecentTokenFileName(string resource)
+        {
+            var uri = new Uri(resource);
+            return String.Format("recent_token_{0}.dat", uri.Host);
         }
     }
 }

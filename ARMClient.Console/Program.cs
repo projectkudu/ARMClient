@@ -74,7 +74,9 @@ namespace ARMClient
                             EnsureGuidFormat(tenantId);
                         }
 
-                        TokenCacheInfo cacheInfo = persistentAuthHelper.GetToken(tenantId, Constants.CSMResource).Result;
+                        persistentAuthHelper.AzureEnvironments = Utils.GetDefaultEnv();
+
+                        TokenCacheInfo cacheInfo = persistentAuthHelper.GetToken(tenantId).Result;
                         var bearer = cacheInfo.CreateAuthorizationHeader();
                         Clipboard.SetText(bearer);
                         DumpClaims(cacheInfo.AccessToken);
@@ -156,7 +158,7 @@ namespace ARMClient
                         _parameters.ThrowIfUnknown();
 
                         var subscriptionId = GetTenantOrSubscription(uri);
-                        TokenCacheInfo cacheInfo = persistentAuthHelper.GetToken(subscriptionId, null).Result;
+                        TokenCacheInfo cacheInfo = persistentAuthHelper.GetToken(subscriptionId).Result;
                         return HttpInvoke(uri, cacheInfo, verb, verbose, content).Result;
                     }
                     else
@@ -445,26 +447,28 @@ namespace ARMClient
         static AzureEnvironments GetAzureEnvironments(Uri uri, PersistentAuthHelper persistentAuthHelper)
         {
             var host = uri.Host;
+
+            var graphs = Constants.AADGraphUrls.Where(url => url.IndexOf(host, StringComparison.OrdinalIgnoreCase) > 0);
+            if (graphs.Count() > 1)
+            {
+                var env = persistentAuthHelper.AzureEnvironments;
+                if (Constants.AADGraphUrls[(int)env].IndexOf(host, StringComparison.OrdinalIgnoreCase) > 0)
+                {
+                    return env;
+                }
+
+                env = Utils.GetDefaultEnv();
+                if (Constants.AADGraphUrls[(int)env].IndexOf(host, StringComparison.OrdinalIgnoreCase) > 0)
+                {
+                    return env;
+                }
+            }
+
             for (int i = 0; i < Constants.AADGraphUrls.Length; ++i)
             {
                 var url = Constants.AADGraphUrls[i];
                 if (url.IndexOf(host, StringComparison.OrdinalIgnoreCase) > 0)
                 {
-                    if ((AzureEnvironments)i == AzureEnvironments.Prod)
-                    {
-                        return (AzureEnvironments)i;
-                    }
-
-                    if (!persistentAuthHelper.IsCacheValid())
-                    {
-                        return (AzureEnvironments)i;
-                    }
-
-                    if (persistentAuthHelper.AzureEnvironments != AzureEnvironments.Prod)
-                    {
-                        return persistentAuthHelper.AzureEnvironments;
-                    }
-
                     return (AzureEnvironments)i;
                 }
             }

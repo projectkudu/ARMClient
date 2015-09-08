@@ -313,7 +313,7 @@ namespace ArmGuiClient
                     string subscriptionId = this.SubscriptionCB.SelectedValue as string;
                     ConfigActioin action = this.GetSelectedAction();
                     Uri uri = AuthUtils.EnsureAbsoluteUri(path, this._authHelper);
-                    var cacheInfo = await this._authHelper.GetToken(subscriptionId, null);
+                    var cacheInfo = await this._authHelper.GetToken(subscriptionId);
                     var handler = new HttpLoggingHandler(new HttpClientHandler(), ConfigSettingFactory.ConfigSettings.Verbose);
                     HttpContent payload = null;
                     if (!string.Equals("get", action.HttpMethod, StringComparison.OrdinalIgnoreCase)

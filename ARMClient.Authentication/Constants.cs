@@ -8,7 +8,7 @@ namespace ARMClient.Authentication
     {
         public static string[] AADLoginUrls = new[]
         {
-            "https://login.windows-ppe.net",
+            "https://login.chinacloudapi.cn",
             "https://login.windows-ppe.net",
             "https://login.windows-ppe.net",
             "https://login.windows.net"
@@ -16,7 +16,7 @@ namespace ARMClient.Authentication
 
         public static string[] AADGraphUrls = new[]
         {
-            "https://graph.ppe.windows.net",
+            "https://graph.windows.net",
             "https://graph.ppe.windows.net",
             "https://graph.ppe.windows.net",
             "https://graph.windows.net"
@@ -24,7 +24,7 @@ namespace ARMClient.Authentication
 
         public static string[] CSMUrls = new[]
         {
-            "https://api-next.resources.windows-int.net",
+            "https://management.chinacloudapi.cn",
             "https://api-current.resources.windows-int.net",
             "https://api-dogfood.resources.windows-int.net",
             "https://management.azure.com"
@@ -32,17 +32,25 @@ namespace ARMClient.Authentication
 
         public static string[] RdfeUrls = new[]
         {
-            "https://umapinext.rdfetest.dnsdemo4.com",
+            "https://management.core.chinacloudapi.cn",
             "https://umapi.rdfetest.dnsdemo4.com",
             "https://umapi-preview.core.windows-int.net",
             "https://management.core.windows.net"
         };
 
+        public static string[] CSMResources = new[]
+        {
+            "https://management.core.chinacloudapi.cn/",
+            "https://management.core.windows.net/",
+            "https://management.core.windows.net/",
+            "https://management.core.windows.net/"
+        };
+
         public static string[] SCMSuffixes = new[]
         {
-            ".scm.antares-int.windows-int.net",
+            ".scm.chinacloudsites.cn",
             ".scm.antdir0.antares-test.windows-int.net",
-            ".scm.ant-intapp.windows-int.net",
+            ".waws-ppedf.windows-int.net",
             ".scm.azurewebsites.net"
         };
 
@@ -67,7 +75,6 @@ namespace ARMClient.Authentication
         public const string AADTenantId = "common";
         public const string AADClientId = "1950a258-227b-4e31-a9cf-717495945fc2";
         public const string AADRedirectUri = "urn:ietf:wg:oauth:2.0:oob";
-        public const string CSMResource = "https://management.core.windows.net/";
         public const string CSMApiVersion = "2014-01-01";
         public const string AADGraphApiVersion = "1.5";
         public const string JsonContentType = "application/json";

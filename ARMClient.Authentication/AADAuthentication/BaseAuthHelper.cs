@@ -49,11 +49,11 @@ namespace ARMClient.Authentication.AADAuthentication
             this.TenantStorage.SaveCache(tenantCache);
         }
 
-        public async Task<TokenCacheInfo> GetToken(string id, string resource)
+        public async Task<TokenCacheInfo> GetToken(string id)
         {
             if (String.IsNullOrEmpty(id))
             {
-                return await GetRecentToken(resource ?? Constants.CSMResource);
+                return await GetRecentToken(Constants.CSMResources[(int)AzureEnvironments]);
             }
 
             string tenantId = null;
@@ -77,14 +77,10 @@ namespace ARMClient.Authentication.AADAuthentication
 
             if (String.IsNullOrEmpty(tenantId))
             {
-                return await GetRecentToken(resource ?? Constants.CSMResource);
+                return await GetRecentToken(Constants.CSMResources[(int)AzureEnvironments]);
             }
 
-            if (resource == null)
-            {
-                resource = id == tenantId ? Constants.AADGraphUrls[(int)AzureEnvironments] : Constants.CSMResource;
-            }
-
+            var resource = id == tenantId ? Constants.AADGraphUrls[(int)AzureEnvironments] : Constants.CSMResources[(int)AzureEnvironments];
             var tokenCache = this.TokenStorage.GetCache();
             TokenCacheInfo cacheInfo;
             if (!tokenCache.TryGetValue(tenantId, resource, out cacheInfo))
@@ -109,7 +105,7 @@ namespace ARMClient.Authentication.AADAuthentication
             this.TenantStorage.ClearCache();
 
             var tokenCache = new CustomTokenCache();
-            var cacheInfo = GetAuthorizationResultBySpn(tokenCache, tenantId, appId, appKey, Constants.CSMResource);
+            var cacheInfo = GetAuthorizationResultBySpn(tokenCache, tenantId, appId, appKey, Constants.CSMResources[(int)AzureEnvironments]);
 
             var tenantCache = await GetTokenForTenants(tokenCache, cacheInfo, appId: appId, appKey: appKey);
 
@@ -125,7 +121,7 @@ namespace ARMClient.Authentication.AADAuthentication
             this.TenantStorage.ClearCache();
 
             var tokenCache = new CustomTokenCache();
-            var cacheInfo = GetAuthorizationResultBySpn(tokenCache, tenantId, appId, certificate, Constants.CSMResource);
+            var cacheInfo = GetAuthorizationResultBySpn(tokenCache, tenantId, appId, certificate, Constants.CSMResources[(int)AzureEnvironments]);
 
             var tenantCache = await GetTokenForTenants(tokenCache, cacheInfo, appId: appId, appKey: "_certificate_");
 
@@ -141,7 +137,7 @@ namespace ARMClient.Authentication.AADAuthentication
             this.TenantStorage.ClearCache();
 
             var tokenCache = new CustomTokenCache();
-            var cacheInfo = GetAuthorizationResultByUpn(tokenCache, "common", username, password, Constants.CSMResource);
+            var cacheInfo = GetAuthorizationResultByUpn(tokenCache, "common", username, password, Constants.CSMResources[(int)AzureEnvironments]);
 
             var tenantCache = await GetTokenForTenants(tokenCache, cacheInfo, username: username, password: password);
 
@@ -178,7 +174,7 @@ namespace ARMClient.Authentication.AADAuthentication
                     if (ex.Message.IndexOf("The provided access grant is expired or revoked") > 0)
                     {
                         AcquireTokens().Wait();
-                        cacheInfo = GetToken(cacheInfo.TenantId, cacheInfo.Resource).Result;
+                        cacheInfo = GetToken(cacheInfo.TenantId).Result;
                         tokenCache.Clone(this.TokenStorage.GetCache());
                         return cacheInfo;
                     }
@@ -214,7 +210,7 @@ namespace ARMClient.Authentication.AADAuthentication
         {
             var tokenCache = this.TokenStorage.GetCache();
             var tenantCache = this.TenantStorage.GetCache();
-            foreach (var cacheItem in tokenCache.GetValues(Constants.CSMResource))
+            foreach (var cacheItem in tokenCache.GetValues(Constants.CSMResources[(int)AzureEnvironments]))
             {
                 var tenantId = cacheItem.TenantId;
 
@@ -269,9 +265,11 @@ namespace ARMClient.Authentication.AADAuthentication
             return ret;
         }
 
-        protected Task<TokenCacheInfo> GetAuthorizationResult(CustomTokenCache tokenCache, string tenantId, string user = null, string resource = Constants.CSMResource)
+        protected Task<TokenCacheInfo> GetAuthorizationResult(CustomTokenCache tokenCache, string tenantId, string user = null, string resource = null)
         {
             var tcs = new TaskCompletionSource<TokenCacheInfo>();
+
+            resource = resource ?? Constants.CSMResources[(int)AzureEnvironments];
 
             TokenCacheInfo found;
             if (tokenCache.TryGetValue(tenantId, resource, out found))
@@ -411,11 +409,11 @@ namespace ARMClient.Authentication.AADAuthentication
                 {
                     if (!String.IsNullOrEmpty(appId) && !String.IsNullOrEmpty(appKey))
                     {
-                        result = GetAuthorizationResultBySpn(tokenCache, tenantId: tenantId, appId: appId, appKey: appKey, resource: Constants.CSMResource);
+                        result = GetAuthorizationResultBySpn(tokenCache, tenantId: tenantId, appId: appId, appKey: appKey, resource: Constants.CSMResources[(int)AzureEnvironments]);
                     }
                     else if (!String.IsNullOrEmpty(username) && !String.IsNullOrEmpty(password))
                     {
-                        result = GetAuthorizationResultByUpn(tokenCache, tenantId: tenantId, username: username, password: password, resource: Constants.CSMResource);
+                        result = GetAuthorizationResultByUpn(tokenCache, tenantId: tenantId, username: username, password: password, resource: Constants.CSMResources[(int)AzureEnvironments]);
                     }
                     else
                     {
@@ -506,7 +504,7 @@ namespace ARMClient.Authentication.AADAuthentication
                 Utils.Trace.WriteLine(string.Empty);
             }
 
-            this.TokenStorage.SaveRecentToken(recentInfo, Constants.CSMResource);
+            this.TokenStorage.SaveRecentToken(recentInfo, Constants.CSMResources[(int)AzureEnvironments]);
 
             return tenantCache;
         }

@@ -231,7 +231,7 @@ namespace ARMClient.Library
                         await this._authHelper.GetTokenByUpn(this._userName, this._password).ConfigureAwait(false);
                         break;
                 }
-                this._tokenCacheInfo = await this._authHelper.GetToken(subscriptionId, Constants.CSMResource).ConfigureAwait(false);
+                this._tokenCacheInfo = await this._authHelper.GetToken(subscriptionId).ConfigureAwait(false);
             }
             return this._tokenCacheInfo.CreateAuthorizationHeader();
         }
