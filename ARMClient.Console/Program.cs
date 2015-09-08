@@ -69,11 +69,6 @@ namespace ARMClient
 
                         EnsureTokenCache(persistentAuthHelper);
 
-                        if (tenantId != null)
-                        {
-                            EnsureGuidFormat(tenantId);
-                        }
-
                         persistentAuthHelper.AzureEnvironments = Utils.GetDefaultEnv();
 
                         TokenCacheInfo cacheInfo = persistentAuthHelper.GetToken(tenantId).Result;
@@ -87,7 +82,6 @@ namespace ARMClient
                     else if (String.Equals(verb, "spn", StringComparison.OrdinalIgnoreCase))
                     {
                         var tenantId = _parameters.Get(1, keyName: "tenant");
-                        EnsureGuidFormat(tenantId);
                         var appId = _parameters.Get(2, keyName: "appId");
                         EnsureGuidFormat(appId);
 
@@ -422,7 +416,7 @@ namespace ARMClient
                 var paths = uri.AbsolutePath.Split(new[] { '/', '?' }, StringSplitOptions.RemoveEmptyEntries);
                 if (Utils.IsGraphApi(uri))
                 {
-                    return Guid.Parse(paths[0]).ToString();
+                    return paths[0];
                 }
 
                 if (paths.Length >= 2 && String.Equals(paths[0], "subscriptions", StringComparison.OrdinalIgnoreCase))

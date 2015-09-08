@@ -58,9 +58,10 @@ namespace ARMClient.Authentication.AADAuthentication
 
             string tenantId = null;
             var tenantCache = this.TenantStorage.GetCache();
-            if (tenantCache.ContainsKey(id))
+            TenantCacheInfo tenantInfo;
+            if (tenantCache.TryGetValue(id, out tenantInfo))
             {
-                tenantId = id;
+                id = tenantId = tenantInfo.tenantId;
             }
 
             if (String.IsNullOrEmpty(tenantId))
@@ -401,7 +402,7 @@ namespace ARMClient.Authentication.AADAuthentication
                 {
                     tenantId = tenantId,
                     displayName = "unknown",
-                    domain = "unknown"
+                    domain = (tenantIds.Length == 1 || tenantId != cacheInfo.TenantId) ?  cacheInfo.TenantId : "unknown"
                 };
 
                 TokenCacheInfo result = null;
@@ -455,11 +456,11 @@ namespace ARMClient.Authentication.AADAuthentication
 
                         if (!String.IsNullOrEmpty(appId) && !String.IsNullOrEmpty(appKey))
                         {
-                            Utils.Trace.WriteLine(string.Format("AppId: {0}, Tenant: {1} ({2})", appId, tenantId, details.verifiedDomains.First(d => d.@default).name));
+                            Utils.Trace.WriteLine(string.Format("AppId: {0}, Tenant: {1} ({2})", appId, tenantId, info.domain));
                         }
                         else
                         {
-                            Utils.Trace.WriteLine(string.Format("User: {0}, Tenant: {1} ({2})", result.DisplayableId, tenantId, details.verifiedDomains.First(d => d.@default).name));
+                            Utils.Trace.WriteLine(string.Format("User: {0}, Tenant: {1} ({2})", result.DisplayableId, tenantId, info.domain));
                         }
                     }
                 }
@@ -500,7 +501,13 @@ namespace ARMClient.Authentication.AADAuthentication
                 {
                     Utils.Trace.WriteLine(string.Format("\t{0}!", ex.Message));
                 }
+
                 tenantCache[tenantId] = info;
+                if (!String.IsNullOrEmpty(info.domain) && info.domain != "unknown")
+                {
+                    tenantCache[info.domain] = info;
+                }
+
                 Utils.Trace.WriteLine(string.Empty);
             }
 
