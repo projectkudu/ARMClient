@@ -97,6 +97,16 @@ namespace ARMClient.Authentication.AADAuthentication
 
             this.TokenStorage.SaveRecentToken(cacheInfo, resource);
 
+            var armResource = Constants.CSMResources[(int)AzureEnvironments];
+            if (resource != armResource)
+            {
+                TokenCacheInfo armInfo;
+                if (tokenCache.TryGetValue(tenantId, armResource, out armInfo))
+                {
+                    this.TokenStorage.SaveRecentToken(armInfo, armResource);
+                }
+            }
+
             return cacheInfo;
         }
 
@@ -214,12 +224,6 @@ namespace ARMClient.Authentication.AADAuthentication
             foreach (var cacheItem in tokenCache.GetValues(Constants.CSMResources[(int)AzureEnvironments]))
             {
                 var tenantId = cacheItem.TenantId;
-
-                if (Constants.InfrastructureTenantIds.Contains(tenantId))
-                {
-                    continue;
-                }
-
                 var details = tenantCache[tenantId];
                 if (!String.IsNullOrEmpty(cacheItem.DisplayableId))
                 {
@@ -395,6 +399,13 @@ namespace ARMClient.Authentication.AADAuthentication
         {
             var recentInfo = cacheInfo;
             var tenantIds = await GetTenantIds(cacheInfo);
+            if (!tenantIds.Contains(cacheInfo.TenantId))
+            {
+                var list = tenantIds.ToList();
+                list.Insert(0, cacheInfo.TenantId);
+                tenantIds = list.ToArray();
+            }
+
             var tenantCache = this.TenantStorage.GetCache();
             foreach (var tenantId in tenantIds)
             {
