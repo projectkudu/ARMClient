@@ -494,6 +494,15 @@ namespace ARMClient
                 }
             }
 
+            for (int i = 0; i < Constants.VsoSuffixes.Length; ++i)
+            {
+                var suffix = Constants.VsoSuffixes[i];
+                if (host.IndexOf(suffix, StringComparison.OrdinalIgnoreCase) > 0)
+                {
+                    return (AzureEnvironments)i;
+                }
+            }
+
             return AzureEnvironments.Prod;
         }
     }

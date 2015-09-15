@@ -54,6 +54,15 @@ namespace ARMClient.Authentication
             ".scm.azurewebsites.net"
         };
 
+        public static string[] VsoSuffixes = new[]
+        {
+            ".notsupport.com",
+            ".notsupport.com",
+            ".tfsallin.net",
+            ".visualstudio.com"
+        };
+
+
         public static string[] InfrastructureTenantIds = new[]
         {
             "ea8a4392-515e-481f-879e-6571ff2a8a36",
