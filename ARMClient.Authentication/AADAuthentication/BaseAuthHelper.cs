@@ -300,7 +300,8 @@ namespace ARMClient.Authentication.AADAuthentication
                         result = context.AcquireToken(
                             resource: resource,
                             clientId: Constants.AADClientId,
-                            redirectUri: new Uri(Constants.AADRedirectUri));
+                            redirectUri: new Uri(Constants.AADRedirectUri),
+                            promptBehavior: PromptBehavior.Never);
                     }
                     else
                     {
@@ -308,7 +309,7 @@ namespace ARMClient.Authentication.AADAuthentication
                             resource: resource,
                             clientId: Constants.AADClientId,
                             redirectUri: new Uri(Constants.AADRedirectUri),
-                            promptBehavior: PromptBehavior.Always);
+                            promptBehavior: PromptBehavior.Auto);
                     }
 
                     var cacheInfo = new TokenCacheInfo(resource, result);
@@ -498,7 +499,7 @@ namespace ARMClient.Authentication.AADAuthentication
                         displayName = subscription.displayName
                     }).ToArray();
 
-                    if (info.subscriptions.Length > 0)
+                    if (recentInfo != null && info.subscriptions.Length > 0)
                     {
                         recentInfo = result;
                     }
