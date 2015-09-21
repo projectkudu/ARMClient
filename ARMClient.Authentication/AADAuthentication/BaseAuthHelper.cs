@@ -301,7 +301,8 @@ namespace ARMClient.Authentication.AADAuthentication
                             resource: resource,
                             clientId: Constants.AADClientId,
                             redirectUri: new Uri(Constants.AADRedirectUri),
-                            promptBehavior: PromptBehavior.Never);
+                            promptBehavior: PromptBehavior.Never,
+                            userId: new UserIdentifier(user, UserIdentifierType.OptionalDisplayableId));
                     }
                     else
                     {
@@ -309,7 +310,7 @@ namespace ARMClient.Authentication.AADAuthentication
                             resource: resource,
                             clientId: Constants.AADClientId,
                             redirectUri: new Uri(Constants.AADRedirectUri),
-                            promptBehavior: PromptBehavior.Auto);
+                            promptBehavior: PromptBehavior.Always);
                     }
 
                     var cacheInfo = new TokenCacheInfo(resource, result);
