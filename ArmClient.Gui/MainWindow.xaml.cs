@@ -232,6 +232,18 @@ namespace ArmGuiClient
             }
 
             string cmd = action.Template;
+            cmd = SetParameterValues(cmd);
+
+            this.CmdText.Text = cmd;
+        }
+
+        /// <summary>
+        /// Replaces the parameter placeholders with values from the UI
+        /// </summary>
+        /// <param name="template">The template containing parameters in the {name} format</param>
+        /// <returns></returns>
+        private string SetParameterValues(string template)
+        {
             foreach (var item in this.ParamLV.Items)
             {
                 StackPanel wrapperPanel = item as StackPanel;
@@ -240,7 +252,7 @@ namespace ArmGuiClient
                     TextBox tb = wrapperPanel.Children[1] as TextBox;
                     if (tb != null && !string.IsNullOrWhiteSpace(tb.Text))
                     {
-                        cmd = cmd.Replace("{" + tb.Name + "}", tb.Text);
+                        template = template.Replace("{" + tb.Name + "}", tb.Text);
                     }
                 }
             }
@@ -249,17 +261,17 @@ namespace ArmGuiClient
             ComboBoxItem apiItem = this.ApiVersionCB.SelectedValue as ComboBoxItem;
             if (apiItem != null)
             {
-                cmd = cmd.Replace("{apiVersion}", apiItem.Content as string);
+                template = template.Replace("{apiVersion}", apiItem.Content as string);
             }
 
             // subscription
             string subscriptionId = this.SubscriptionCB.SelectedValue as string;
             if (!string.IsNullOrWhiteSpace(subscriptionId))
             {
-                cmd = cmd.Replace("{subscription}", subscriptionId);
+                template = template.Replace("{subscription}", subscriptionId);
             }
 
-            this.CmdText.Text = cmd;
+            return template;
         }
 
         private void PopulateTenant()
@@ -352,6 +364,8 @@ namespace ArmGuiClient
                 {
                     payload = payload.Replace("{" + item.Key + "}", item.Value.ToString());
                 }
+                // Also update the parameters from the UI
+                SetParameterValues(payload);
                 File.WriteAllText(_tmpPayloadFile, string.IsNullOrWhiteSpace(payload) ? "" : payload);
                 Process.Start(ConfigSettingFactory.ConfigSettings.Editor, _tmpPayloadFile);
                 Logger.InfoLn("Editing payload in {0} (Ctrl + W)", _tmpPayloadFile);
