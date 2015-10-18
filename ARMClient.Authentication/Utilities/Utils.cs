@@ -6,6 +6,8 @@ using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 using System.IO;
+using System.Text;
+using Newtonsoft.Json.Linq;
 
 namespace ARMClient.Authentication.Utilities
 {
@@ -37,6 +39,24 @@ namespace ARMClient.Authentication.Utilities
         public static void SetTraceListener(TraceListener listener)
         {
             _traceListener = listener;
+        }
+
+        public static string EnsureBase64Key(string key)
+        {
+            // assume already base64 if len > 16
+            if (key.Length > 16)
+            {
+                return key;
+            }
+
+            // assume plain text password
+            while (key.Length < 32)
+            {
+                key += key;
+            }
+
+            var bytes = Encoding.UTF8.GetBytes(key.Substring(0, 32));
+            return Convert.ToBase64String(bytes);
         }
 
         class DefaultTraceListener : TraceListener
@@ -107,6 +127,36 @@ namespace ARMClient.Authentication.Utilities
                     }
 
                     return (-1) * (int)response.StatusCode;
+                }
+            }
+        }
+
+        public static async Task<JObject> HttpGet(Uri uri, TokenCacheInfo cacheInfo)
+        {
+            using (var client = new HttpClient())
+            {
+                client.DefaultRequestHeaders.Add("Authorization", cacheInfo.CreateAuthorizationHeader());
+                client.DefaultRequestHeaders.Add("User-Agent", Constants.UserAgent.Value);
+                client.DefaultRequestHeaders.Add("Accept", Constants.JsonContentType);
+
+                if (Utils.IsRdfe(uri))
+                {
+                    client.DefaultRequestHeaders.Add("x-ms-version", "2013-10-01");
+                }
+
+                client.DefaultRequestHeaders.Add("x-ms-request-id", Guid.NewGuid().ToString());
+
+                using (var response = await client.GetAsync(uri))
+                {
+                    var content = await response.Content.ReadAsStringAsync();
+                    if (!response.IsSuccessStatusCode)
+                    {
+                        Trace.WriteLine("Status:  " + response.StatusCode);
+                        Trace.WriteLine("Content: " + content);
+                    }
+
+                    response.EnsureSuccessStatusCode();
+                    return JObject.Parse(content);
                 }
             }
         }

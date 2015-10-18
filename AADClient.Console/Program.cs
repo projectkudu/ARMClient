@@ -25,58 +25,15 @@ namespace ARMClient
             try
             {
                 var persistentAuthHelper = new PersistentAuthHelper();
+                persistentAuthHelper.AzureEnvironments = AzureEnvironments.Prod;
                 if (args.Length > 0)
                 {
                     var _parameters = new CommandLineParameters(args);
                     var verb = _parameters.Get(0, "verb");
                     if (String.Equals(verb, "login", StringComparison.OrdinalIgnoreCase))
                     {
-                        var env = _parameters.Get(1, requires: false);
                         _parameters.ThrowIfUnknown();
-
-                        persistentAuthHelper.AzureEnvironments = env == null ? Utils.GetDefaultEnv() :
-                            (AzureEnvironments)Enum.Parse(typeof(AzureEnvironments), args[1], ignoreCase: true);
                         persistentAuthHelper.AcquireTokens().Wait();
-                        return 0;
-                    }
-                    else if (String.Equals(verb, "listcache", StringComparison.OrdinalIgnoreCase))
-                    {
-                        _parameters.ThrowIfUnknown();
-                        EnsureTokenCache(persistentAuthHelper);
-
-                        foreach (var line in persistentAuthHelper.DumpTokenCache())
-                        {
-                            Console.WriteLine(line);
-                        }
-                        return 0;
-                    }
-                    else if (String.Equals(verb, "clearcache", StringComparison.OrdinalIgnoreCase))
-                    {
-                        _parameters.ThrowIfUnknown();
-                        persistentAuthHelper.ClearTokenCache();
-                        return 0;
-                    }
-                    else if (String.Equals(verb, "token", StringComparison.OrdinalIgnoreCase))
-                    {
-                        var tenantId = _parameters.Get(1, requires: false);
-                        _parameters.ThrowIfUnknown();
-
-                        if (tenantId != null && tenantId.StartsWith("ey"))
-                        {
-                            DumpClaims(tenantId);
-                            return 0;
-                        }
-
-                        EnsureTokenCache(persistentAuthHelper);
-
-                        persistentAuthHelper.AzureEnvironments = Utils.GetDefaultEnv();
-
-                        TokenCacheInfo cacheInfo = persistentAuthHelper.GetToken(tenantId).Result;
-                        var bearer = cacheInfo.CreateAuthorizationHeader();
-                        Clipboard.SetText(bearer);
-                        DumpClaims(cacheInfo.AccessToken);
-                        Console.WriteLine();
-                        Console.WriteLine("Token copied to clipboard successfully.");
                         return 0;
                     }
                     else if (String.Equals(verb, "spn", StringComparison.OrdinalIgnoreCase))
@@ -113,52 +70,138 @@ namespace ARMClient
                         _parameters.ThrowIfUnknown();
 
                         persistentAuthHelper.AzureEnvironments = Utils.GetDefaultEnv();
-                        var cacheInfo = certificate != null ?
-                            persistentAuthHelper.GetTokenBySpn(tenantId, appId, certificate).Result :
-                            persistentAuthHelper.GetTokenBySpn(tenantId, appId, appKey).Result;
+                        var info = certificate != null ?
+                            AADHelper.AcquireTokenByX509(tenantId, appId, certificate).Result :
+                            AADHelper.AcquireTokenBySPN(tenantId, appId, appKey).Result;
+                        Clipboard.SetText(info.access_token);
+                        DumpClaims(info.access_token);
+                        Console.WriteLine();
+                        Console.WriteLine("Token copied to clipboard successfully.");
                         return 0;
                     }
-                    else if (String.Equals(verb, "upn", StringComparison.OrdinalIgnoreCase))
+                    else if (String.Equals(verb, "get-tenant", StringComparison.OrdinalIgnoreCase))
                     {
-                        var username = _parameters.Get(1, keyName: "username");
-                        var password = _parameters.Get(2, keyName: "password", requires: false);
-                        if (password == null)
-                        {
-                            password = PromptForPassword("password");
-                        }
+                        var tenant = _parameters.Get(1, keyName: "tenant");
                         _parameters.ThrowIfUnknown();
 
-                        persistentAuthHelper.AzureEnvironments = Utils.GetDefaultEnv();
-                        var cacheInfo = persistentAuthHelper.GetTokenByUpn(username, password).Result;
-                        return 0;
-                    }
-                    else if (String.Equals(verb, "get", StringComparison.OrdinalIgnoreCase)
-                        || String.Equals(verb, "delete", StringComparison.OrdinalIgnoreCase)
-                        || String.Equals(verb, "put", StringComparison.OrdinalIgnoreCase)
-                        || String.Equals(verb, "post", StringComparison.OrdinalIgnoreCase)
-                        || String.Equals(verb, "patch", StringComparison.OrdinalIgnoreCase))
-                    {
-                        var path = _parameters.Get(1, keyName: "url");
-                        var verbose = _parameters.Get("-verbose", requires: false) != null || Utils.GetDefaultVerbose();
-                        if (!verbose)
-                        {
-                            Trace.Listeners.Clear();
-                        }
-
+                        var path = String.Format("/{0}/tenantDetails?api-version=1.6", tenant);
                         var uri = EnsureAbsoluteUri(path, persistentAuthHelper);
-                        var env = GetAzureEnvironments(uri, persistentAuthHelper);
-                        if (!persistentAuthHelper.IsCacheValid() || persistentAuthHelper.AzureEnvironments != env)
-                        {
-                            persistentAuthHelper.AzureEnvironments = env;
-                            persistentAuthHelper.AcquireTokens().Wait();
-                        }
-
-                        var content = ParseHttpContent(verb, _parameters);
-                        _parameters.ThrowIfUnknown();
 
                         var subscriptionId = GetTenantOrSubscription(uri);
                         TokenCacheInfo cacheInfo = persistentAuthHelper.GetToken(subscriptionId).Result;
-                        return HttpInvoke(uri, cacheInfo, verb, verbose, content).Result;
+                        return HttpInvoke(uri, cacheInfo, "get", Utils.GetDefaultVerbose(), null).Result;
+                    }
+                    else if (String.Equals(verb, "get-tenant", StringComparison.OrdinalIgnoreCase))
+                    {
+                        var tenant = _parameters.Get(1, keyName: "tenant");
+                        _parameters.ThrowIfUnknown();
+
+                        var path = String.Format("/{0}/tenantDetails/{0}?api-version=1.6", tenant);
+                        var uri = EnsureAbsoluteUri(path, persistentAuthHelper);
+
+                        var subscriptionId = GetTenantOrSubscription(uri);
+                        TokenCacheInfo cacheInfo = persistentAuthHelper.GetToken(subscriptionId).Result;
+                        return HttpInvoke(uri, cacheInfo, "get", Utils.GetDefaultVerbose(), null).Result;
+                    }
+                    else if (String.Equals(verb, "get-apps", StringComparison.OrdinalIgnoreCase))
+                    {
+                        var tenant = _parameters.Get(1, keyName: "tenant");
+                        _parameters.ThrowIfUnknown();
+
+                        var path = String.Format("/{0}/applications?api-version=1.6", tenant);
+                        var uri = EnsureAbsoluteUri(path, persistentAuthHelper);
+
+                        var subscriptionId = GetTenantOrSubscription(uri);
+                        TokenCacheInfo cacheInfo = persistentAuthHelper.GetToken(subscriptionId).Result;
+                        return HttpInvoke(uri, cacheInfo, "get", Utils.GetDefaultVerbose(), null).Result;
+                    }
+                    else if (String.Equals(verb, "get-app", StringComparison.OrdinalIgnoreCase))
+                    {
+                        var tenant = _parameters.Get(1, keyName: "tenant");
+                        var app = _parameters.Get(2, keyName: "app");
+                        _parameters.ThrowIfUnknown();
+
+                        Guid unused;
+                        var isGuid = Guid.TryParse(app, out unused);
+
+                        var path = isGuid ? String.Format("/{0}/applications?$filter=appId eq '{1}'&api-version=1.6", tenant, app)
+                            : String.Format("/{0}/applications?$filter=displayName eq '{1}'&api-version=1.6", tenant, app);
+
+                        var uri = EnsureAbsoluteUri(path, persistentAuthHelper);
+
+                        var subscriptionId = GetTenantOrSubscription(uri);
+                        TokenCacheInfo cacheInfo = persistentAuthHelper.GetToken(subscriptionId).Result;
+                        return HttpInvoke(uri, cacheInfo, "get", Utils.GetDefaultVerbose(), null).Result;
+                    }
+                    else if (String.Equals(verb, "add-cred", StringComparison.OrdinalIgnoreCase))
+                    {
+                        var tenant = _parameters.Get(1, keyName: "tenant");
+                        var app = _parameters.Get(2, keyName: "app");
+                        X509Certificate2 certificate = null;
+                        var appKey = _parameters.Get(3, keyName: "appKey", requires: false);
+                        if (appKey == null)
+                        {
+                            appKey = PromptForPassword("appKey");
+                        }
+                        else
+                        {
+                            if (File.Exists(appKey))
+                            {
+                                certificate = new X509Certificate2(appKey);
+                                if (certificate.HasPrivateKey)
+                                {
+                                    throw new Exception("Certificate must not contain private key!");
+                                }
+                            }
+                        }
+
+                        if (certificate == null)
+                        {
+                            appKey = Utils.EnsureBase64Key(appKey);
+                        }
+
+                        _parameters.ThrowIfUnknown();
+
+                        var appObject = GetAppObject(persistentAuthHelper, tenant, app).Result;
+                        var appObjectId = GetAppObjectId(appObject);
+                        HttpContent content;
+                        if (certificate != null)
+                        {
+                            content = GetPatchContent(appObject, certificate);
+                        }
+                        else
+                        {
+                            content = GetPatchContent(appObject, appKey);
+                        }
+
+                        var path = String.Format("/{0}/directoryObjects/{1}/Microsoft.DirectoryServices.Application?api-version=1.6", tenant, appObjectId);
+
+                        var uri = EnsureAbsoluteUri(path, persistentAuthHelper);
+
+                        var subscriptionId = GetTenantOrSubscription(uri);
+                        TokenCacheInfo cacheInfo = persistentAuthHelper.GetToken(subscriptionId).Result;
+
+                        return HttpInvoke(uri, cacheInfo, "patch", Utils.GetDefaultVerbose(), content).Result;
+                    }
+                    else if (String.Equals(verb, "del-cred", StringComparison.OrdinalIgnoreCase))
+                    {
+                        var tenant = _parameters.Get(1, keyName: "tenant");
+                        var app = _parameters.Get(2, keyName: "app");
+                        var keyId = _parameters.Get(3, keyName: "keyId");
+                        EnsureGuidFormat(keyId);
+                        _parameters.ThrowIfUnknown();
+
+                        var appObject = GetAppObject(persistentAuthHelper, tenant, app).Result;
+                        var appObjectId = GetAppObjectId(appObject);
+                        var content = GetRemoveContent(appObject, keyId);
+                        var path = String.Format("/{0}/directoryObjects/{1}/Microsoft.DirectoryServices.Application?api-version=1.6", tenant, appObjectId);
+
+                        var uri = EnsureAbsoluteUri(path, persistentAuthHelper);
+
+                        var subscriptionId = GetTenantOrSubscription(uri);
+                        TokenCacheInfo cacheInfo = persistentAuthHelper.GetToken(subscriptionId).Result;
+
+                        return HttpInvoke(uri, cacheInfo, "patch", Utils.GetDefaultVerbose(), content).Result;
                     }
                     else
                     {
@@ -174,6 +217,108 @@ namespace ARMClient
                 DumpException(ex);
                 return -1;
             }
+        }
+
+        static async Task<JObject> GetAppObject(PersistentAuthHelper persistentAuthHelper, string tenant, string app)
+        {
+            Guid unused;
+            var isGuid = Guid.TryParse(app, out unused);
+
+            var path = isGuid ? String.Format("/{0}/applications?$filter=appId eq '{1}'&api-version=1.6", tenant, app)
+                : String.Format("/{0}/applications?$filter=displayName eq '{1}'&api-version=1.6", tenant, app);
+
+            var uri = EnsureAbsoluteUri(path, persistentAuthHelper);
+
+            var subscriptionId = GetTenantOrSubscription(uri);
+            TokenCacheInfo cacheInfo = persistentAuthHelper.GetToken(subscriptionId).Result;
+
+            var json = await Utils.HttpGet(uri, cacheInfo);
+            var apps = json.Value<JArray>("value");
+            if (apps.Count != 1)
+            {
+                throw new Exception("Invalid application!");
+            }
+
+            return (JObject)apps[0];
+        }
+
+        static string GetAppObjectId(JObject appObject)
+        {
+            return appObject.Value<string>("objectId");
+        }
+
+        static HttpContent GetRemoveContent(JObject appObject, string keyId)
+        {
+            var creds = GetPasswordCredentials(appObject);
+            var updates = new JArray(creds.Where(cred => !String.Equals(cred.Value<string>("keyId"), keyId, StringComparison.OrdinalIgnoreCase)));
+            if (updates.Count < creds.Count)
+            {
+                var json = new JObject();
+                json["odata.type"] = "Microsoft.DirectoryServices.Application";
+                json["passwordCredentials@odata.type"] = "Collection(Microsoft.DirectoryServices.PasswordCredential)";
+                json["passwordCredentials"] = updates;
+                return new StringContent(json.ToString(Newtonsoft.Json.Formatting.None), Encoding.UTF8, "application/json");
+            }
+
+            creds = GetKeyCredentials(appObject);
+            updates = new JArray(creds.Where(cred => !String.Equals(cred.Value<string>("keyId"), keyId, StringComparison.OrdinalIgnoreCase)));
+            if (updates.Count < creds.Count)
+            {
+                var json = new JObject();
+                json["odata.type"] = "Microsoft.DirectoryServices.Application";
+                json["keyCredentials@odata.type"] = "Collection(Microsoft.DirectoryServices.KeyCredential)";
+                json["keyCredentials"] = updates;
+                return new StringContent(json.ToString(Newtonsoft.Json.Formatting.None), Encoding.UTF8, "application/json");
+            }
+
+            throw new Exception("Cannot find key with " + keyId + " id");
+        }
+
+        static HttpContent GetPatchContent(JObject appObject, string appKey)
+        {
+            var cred = new JObject();
+            cred["startDate"] = DateTime.UtcNow.ToString("o");
+            cred["endDate"] = DateTime.UtcNow.AddYears(1).ToString("o");
+            cred["value"] = appKey;
+
+            var creds = GetPasswordCredentials(appObject);
+            creds.Add(cred);
+
+            var json = new JObject();
+            json["odata.type"] = "Microsoft.DirectoryServices.Application";
+            json["passwordCredentials@odata.type"] = "Collection(Microsoft.DirectoryServices.PasswordCredential)";
+            json["passwordCredentials"] = creds;
+            return new StringContent(json.ToString(Newtonsoft.Json.Formatting.None), Encoding.UTF8, "application/json");
+        }
+
+        static HttpContent GetPatchContent(JObject appObject, X509Certificate2 certificate)
+        {
+            var cred = new JObject();
+            cred["startDate"] = DateTime.UtcNow.ToString("o");
+            cred["endDate"] = DateTime.UtcNow.AddYears(1).ToString("o");
+            cred["type"] = "AsymmetricX509Cert";
+            cred["usage"] = "Verify";
+            cred["customKeyIdentifier"] = Convert.ToBase64String(certificate.GetCertHash());
+            cred["value"] = Convert.ToBase64String(certificate.GetRawCertData());
+
+            var creds = GetKeyCredentials(appObject);
+            creds.Add(cred);
+
+            var json = new JObject();
+            json["odata.type"] = "Microsoft.DirectoryServices.Application";
+            json["keyCredentials@odata.type"] = "Collection(Microsoft.DirectoryServices.KeyCredential)";
+            json["keyCredentials"] = creds;
+            return new StringContent(json.ToString(Newtonsoft.Json.Formatting.None), Encoding.UTF8, "application/json");
+        }
+
+        static JArray GetPasswordCredentials(JObject appObject)
+        {
+            return appObject.Value<JArray>("passwordCredentials");
+        }
+
+        static JArray GetKeyCredentials(JObject appObject)
+        {
+            return appObject.Value<JArray>("keyCredentials");
         }
 
         static string PromptForPassword(string title)
@@ -293,38 +438,33 @@ namespace ARMClient
 
         static void PrintUsage()
         {
-            Console.WriteLine(@"ARMClient version {0}", typeof(Program).Assembly.GetName().Version);
-            Console.WriteLine("A simple tool to invoke the Azure Resource Manager API");
+            Console.WriteLine(@"AADClient version {0}", typeof(Program).Assembly.GetName().Version);
+            Console.WriteLine("A simple tool to invoke the Graph API");
             Console.WriteLine("Source code is available on https://github.com/projectkudu/ARMClient.");
 
             Console.WriteLine();
             Console.WriteLine("Login and get tokens");
-            Console.WriteLine("    ARMClient.exe login [environment name]");
+            Console.WriteLine("    AADClient.exe login");
 
             Console.WriteLine();
-            Console.WriteLine("Call ARM api");
-            Console.WriteLine("    ARMClient.exe [get|post|put|patch|delete] [url] (<@file|content>) (-verbose)");
+            Console.WriteLine("Get Tenant Details");
+            Console.WriteLine("    AADClient.exe get-tenant [tenant]");
 
             Console.WriteLine();
-            Console.WriteLine("Copy token to clipboard");
-            Console.WriteLine("    ARMClient.exe token [tenant|subscription]");
+            Console.WriteLine("Get Applications");
+            Console.WriteLine("    AADClient.exe get-apps [tenant]");
+            Console.WriteLine("    AADClient.exe get-app [tenant] [appId]");
+
+            Console.WriteLine();
+            Console.WriteLine("ServicePrincipal Secrets");
+            Console.WriteLine("    AADClient.exe add-cred [tenant] [appId] (appKey)");
+            Console.WriteLine("    AADClient.exe add-cred [tenant] [appId] [certificate] (password)");
+            Console.WriteLine("    AADClient.exe del-cred [tenant] [appId] [keyId]");
 
             Console.WriteLine();
             Console.WriteLine("Get token by ServicePrincipal");
-            Console.WriteLine("    ARMClient.exe spn [tenant] [appId] (appKey)");
-            Console.WriteLine("    ARMClient.exe spn [tenant] [appId] [certificate] (password)");
-
-            Console.WriteLine();
-            Console.WriteLine("Get token by Username/Password");
-            Console.WriteLine("    ARMClient.exe upn [username] (password)");
-
-            Console.WriteLine();
-            Console.WriteLine("List token cache");
-            Console.WriteLine("    ARMClient.exe listcache");
-
-            Console.WriteLine();
-            Console.WriteLine("Clear token cache");
-            Console.WriteLine("    ARMClient.exe clearcache");
+            Console.WriteLine("    AADClient.exe spn [tenant] [appId] (appKey)");
+            Console.WriteLine("    AADClient.exe spn [tenant] [appId] [certificate] (password)");
         }
 
         static HttpContent ParseHttpContent(string verb, CommandLineParameters parameters)
