@@ -3,7 +3,7 @@
   <metadata>
     <id>ARMClient</id>
     <title>ARMClient</title>
-    <version>1.0.2</version>
+    <version>1.1.0</version>
     <authors>Project Kudu contributors</authors>
     <summary>A simple command line tool to invoke the Azure Resource Manager API</summary>
     <description>A simple command line tool to invoke the Azure Resource Manager API</description>
