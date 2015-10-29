@@ -6,6 +6,7 @@ namespace ARMClient.Authentication.Contracts
         Mooncake = 0,
         Current = 1,
         Dogfood = 2,
-        Prod = 3
+        Prod = 3,
+        Fairfax = 4
     }
 }

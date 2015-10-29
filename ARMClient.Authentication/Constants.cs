@@ -11,6 +11,7 @@ namespace ARMClient.Authentication
             "https://login.chinacloudapi.cn",
             "https://login.windows-ppe.net",
             "https://login.windows-ppe.net",
+            "https://login.windows.net",
             "https://login.windows.net"
         };
 
@@ -19,6 +20,7 @@ namespace ARMClient.Authentication
             "https://graph.windows.net",
             "https://graph.ppe.windows.net",
             "https://graph.ppe.windows.net",
+            "https://graph.windows.net",
             "https://graph.windows.net"
         };
 
@@ -27,7 +29,8 @@ namespace ARMClient.Authentication
             "https://management.chinacloudapi.cn",
             "https://api-current.resources.windows-int.net",
             "https://api-dogfood.resources.windows-int.net",
-            "https://management.azure.com"
+            "https://management.azure.com",
+            "https://management.usgovcloudapi.net"
         };
 
         public static string[] RdfeUrls = new[]
@@ -35,7 +38,8 @@ namespace ARMClient.Authentication
             "https://management.core.chinacloudapi.cn",
             "https://umapi.rdfetest.dnsdemo4.com",
             "https://umapi-preview.core.windows-int.net",
-            "https://management.core.windows.net"
+            "https://management.core.windows.net",
+            "https://management.core.usgovcloudapi.net"
         };
 
         public static string[] CSMResources = new[]
@@ -43,7 +47,8 @@ namespace ARMClient.Authentication
             "https://management.core.chinacloudapi.cn/",
             "https://management.core.windows.net/",
             "https://management.core.windows.net/",
-            "https://management.core.windows.net/"
+            "https://management.core.windows.net/",
+            "https://management.core.usgovcloudapi.net/"
         };
 
         public static string[] SCMSuffixes = new[]
@@ -51,7 +56,8 @@ namespace ARMClient.Authentication
             ".scm.chinacloudsites.cn",
             ".scm.antdir0.antares-test.windows-int.net",
             ".waws-ppedf.windows-int.net",
-            ".scm.azurewebsites.net"
+            ".scm.azurewebsites.net",
+            ".scm.azurewebsites.us"
         };
 
         public static string[] VsoSuffixes = new[]
@@ -59,7 +65,8 @@ namespace ARMClient.Authentication
             ".notsupport.com",
             ".notsupport.com",
             ".tfsallin.net",
-            ".visualstudio.com"
+            ".visualstudio.com",
+            ".notsupport.com"
         };
 
 
