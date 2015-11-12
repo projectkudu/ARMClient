@@ -20,6 +20,11 @@ namespace ARMClient.Authentication.Utilities
             get { return _traceListener ?? DefaultTraceListener.Default; }
         }
 
+        public static string GetLoginTenant()
+        {
+            return Environment.GetEnvironmentVariable("ARMCLIENT_TENANT") ?? Constants.AADCommonTenant;
+        }
+
         public static AzureEnvironments GetDefaultEnv()
         {
             AzureEnvironments env;

@@ -88,7 +88,7 @@ namespace ARMClient.Authentication
             return "ARMClient/" + FileVersion.Value;
         });
 
-        public const string AADTenantId = "common";
+        public const string AADCommonTenant = "common";
         public const string AADClientId = "1950a258-227b-4e31-a9cf-717495945fc2";
         public const string AADRedirectUri = "urn:ietf:wg:oauth:2.0:oob";
         public const string CSMApiVersion = "2014-01-01";

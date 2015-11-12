@@ -203,6 +203,35 @@ namespace ARMClient
 
                         return HttpInvoke(uri, cacheInfo, "patch", Utils.GetDefaultVerbose(), content).Result;
                     }
+                    else if (String.Equals(verb, "get-users", StringComparison.OrdinalIgnoreCase))
+                    {
+                        var tenant = _parameters.Get(1, keyName: "tenant");
+                        _parameters.ThrowIfUnknown();
+
+                        var path = String.Format("/{0}/users?api-version=1.6", tenant);
+                        var uri = EnsureAbsoluteUri(path, persistentAuthHelper);
+
+                        var subscriptionId = GetTenantOrSubscription(uri);
+                        TokenCacheInfo cacheInfo = persistentAuthHelper.GetToken(subscriptionId).Result;
+                        return HttpInvoke(uri, cacheInfo, "get", Utils.GetDefaultVerbose(), null).Result;
+                    }
+                    else if (String.Equals(verb, "get-user", StringComparison.OrdinalIgnoreCase))
+                    {
+                        var tenant = _parameters.Get(1, keyName: "tenant");
+                        var user = _parameters.Get(2, keyName: "user");
+                        _parameters.ThrowIfUnknown();
+
+                        var path = String.Format("/{0}/users/{1}?api-version=1.6", tenant, user);
+                        if ((user.StartsWith("1") || user.StartsWith("0")) && user.Length == 16)
+                        {
+                            path = String.Format("/{0}/users?api-version=1.2-internal&$filter=netId eq '{1}' or alternativeSecurityIds/any(x:x/type eq 1 and x/identityProvider eq null and x/key eq X'{1}')", tenant, user);
+                        }
+                        var uri = EnsureAbsoluteUri(path, persistentAuthHelper);
+
+                        var subscriptionId = GetTenantOrSubscription(uri);
+                        TokenCacheInfo cacheInfo = persistentAuthHelper.GetToken(subscriptionId).Result;
+                        return HttpInvoke(uri, cacheInfo, "get", Utils.GetDefaultVerbose(), null).Result;
+                    }
                     else
                     {
                         throw new CommandLineException(String.Format("Parameter '{0}' is invalid!", verb));
@@ -465,6 +494,11 @@ namespace ARMClient
             Console.WriteLine("Get token by ServicePrincipal");
             Console.WriteLine("    AADClient.exe spn [tenant] [appId] (appKey)");
             Console.WriteLine("    AADClient.exe spn [tenant] [appId] [certificate] (password)");
+
+            Console.WriteLine();
+            Console.WriteLine("Get Users");
+            Console.WriteLine("    AADClient.exe get-users [tenant]");
+            Console.WriteLine("    AADClient.exe get-user [tenant] [user]");
         }
 
         static HttpContent ParseHttpContent(string verb, CommandLineParameters parameters)

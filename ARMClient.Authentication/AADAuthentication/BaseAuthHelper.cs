@@ -40,7 +40,7 @@ namespace ARMClient.Authentication.AADAuthentication
             this.TenantStorage.ClearCache();
 
             var tokenCache = new CustomTokenCache();
-            var cacheInfo = await GetAuthorizationResult(tokenCache, Constants.AADTenantId);
+            var cacheInfo = await GetAuthorizationResult(tokenCache, Utils.GetLoginTenant());
             Utils.Trace.WriteLine(string.Format("Welcome {0} (Tenant: {1})", cacheInfo.DisplayableId, cacheInfo.TenantId));
 
             var tenantCache = await GetTokenForTenants(tokenCache, cacheInfo);
