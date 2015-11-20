@@ -232,6 +232,21 @@ namespace ARMClient
                         TokenCacheInfo cacheInfo = persistentAuthHelper.GetToken(subscriptionId).Result;
                         return HttpInvoke(uri, cacheInfo, "get", Utils.GetDefaultVerbose(), null).Result;
                     }
+                    else if (String.Equals(verb, "get-groups", StringComparison.OrdinalIgnoreCase))
+                    {
+                        var tenant = _parameters.Get(1, keyName: "tenant");
+                        var user = _parameters.Get(2, keyName: "user");
+                        _parameters.ThrowIfUnknown();
+
+
+                        var path = String.Format("/{0}/users/{1}/getMemberGroups?api-version=1.6", tenant, user);
+                        var uri = EnsureAbsoluteUri(path, persistentAuthHelper);
+
+                        var subscriptionId = GetTenantOrSubscription(uri);
+                        TokenCacheInfo cacheInfo = persistentAuthHelper.GetToken(subscriptionId).Result;
+                        var content = new StringContent("{\"securityEnabledOnly\": false}", Encoding.UTF8, "application/json");
+                        return HttpInvoke(uri, cacheInfo, "post", Utils.GetDefaultVerbose(), content).Result;
+                    }
                     else
                     {
                         throw new CommandLineException(String.Format("Parameter '{0}' is invalid!", verb));
@@ -498,7 +513,11 @@ namespace ARMClient
             Console.WriteLine();
             Console.WriteLine("Get Users");
             Console.WriteLine("    AADClient.exe get-users [tenant]");
-            Console.WriteLine("    AADClient.exe get-user [tenant] [user]");
+            Console.WriteLine("    AADClient.exe get-user [tenant] [puid|altsecid|upn|oid]");
+
+            Console.WriteLine();
+            Console.WriteLine("Get Groups");
+            Console.WriteLine("    AADClient.exe get-groups [tenant] [upn|oid]");
         }
 
         static HttpContent ParseHttpContent(string verb, CommandLineParameters parameters)
