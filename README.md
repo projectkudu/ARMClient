@@ -43,7 +43,7 @@ Example
 private static async Task Run()
 {
     
-	var armClient = ARMLib.GetDynamicClient("2014-04-01", AzureEnvironments.Prod).ConfigureLogin(LoginType.Upn,"username","password");
+	var armClient = await ARMLib.GetDynamicClient("2014-04-01", AzureEnvironments.Prod).ConfigureLogin(LoginType.Upn,"username","password");
             
 
     var resourceGroups = await armClient.Subscriptions["{subscriptionId}"]
