@@ -51,6 +51,25 @@ namespace ARMClient.Authentication.AADAuthentication
 
         public async Task<TokenCacheInfo> GetToken(string id)
         {
+            try
+            {
+                return await GetTokenInternal(id);
+            }
+            catch (AdalServiceException ex)
+            {
+                if (ex.Message.IndexOf("The provided access grant is expired or revoked") < 0)
+                {
+                    throw;
+                }
+            }
+
+            await AcquireTokens();
+
+            return await GetTokenInternal(id);
+        }
+
+        private async Task<TokenCacheInfo> GetTokenInternal(string id)
+        {
             if (String.IsNullOrEmpty(id))
             {
                 return await GetRecentToken(Constants.CSMResources[(int)AzureEnvironments]);
@@ -176,26 +195,7 @@ namespace ARMClient.Authentication.AADAuthentication
         {
             if (!String.IsNullOrEmpty(cacheInfo.RefreshToken))
             {
-                bool reAcquireTokens = false;
-                try
-                {
-                    return await GetAuthorizationResultByRefreshToken(tokenCache, cacheInfo);
-                }
-                catch (AdalServiceException ex)
-                {
-                    if (ex.Message.IndexOf("The provided access grant is expired or revoked") < 0)
-                    {
-                        throw;
-                    }
-                }
-
-                if (reAcquireTokens)
-                {
-                    await AcquireTokens();
-                    cacheInfo = await GetToken(cacheInfo.TenantId);
-                    tokenCache.Clone(this.TokenStorage.GetCache());
-                    return cacheInfo;
-                }
+                return await GetAuthorizationResultByRefreshToken(tokenCache, cacheInfo);
             }
             else if (!String.IsNullOrEmpty(cacheInfo.AppId) && cacheInfo.AppKey == "_certificate_")
             {
