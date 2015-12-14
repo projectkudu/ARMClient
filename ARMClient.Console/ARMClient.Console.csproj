@@ -68,7 +68,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
-    <None Include="ARMClient.nuspec" />
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
