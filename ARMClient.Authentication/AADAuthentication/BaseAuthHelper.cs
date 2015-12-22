@@ -57,7 +57,7 @@ namespace ARMClient.Authentication.AADAuthentication
             }
             catch (AdalServiceException ex)
             {
-                if (ex.Message.IndexOf("The provided access grant is expired or revoked") < 0)
+                if (ex.Message.IndexOf(" is expired") < 0)
                 {
                     throw;
                 }
