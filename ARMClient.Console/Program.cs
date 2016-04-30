@@ -61,6 +61,17 @@ namespace ARMClient
                         var tenantId = _parameters.Get(1, requires: false);
                         _parameters.ThrowIfUnknown();
 
+                        if (tenantId == null)
+                        {
+                            var accessToken = Utils.GetDefaultToken();
+                            if (!String.IsNullOrEmpty(accessToken))
+                            {
+                                DumpClaims(accessToken);
+                                Console.WriteLine();
+                                return 0;
+                            }
+                        }
+
                         if (tenantId != null && tenantId.StartsWith("ey"))
                         {
                             DumpClaims(tenantId);
@@ -73,7 +84,7 @@ namespace ARMClient
 
                         TokenCacheInfo cacheInfo = persistentAuthHelper.GetToken(tenantId).Result;
                         var bearer = cacheInfo.CreateAuthorizationHeader();
-                        Clipboard.SetText(bearer);
+                        Clipboard.SetText(cacheInfo.AccessToken);
                         DumpClaims(cacheInfo.AccessToken);
                         Console.WriteLine();
                         Console.WriteLine("Token copied to clipboard successfully.");
@@ -145,16 +156,22 @@ namespace ARMClient
                             Trace.Listeners.Clear();
                         }
 
+                        var content = ParseHttpContent(verb, _parameters);
+                        _parameters.ThrowIfUnknown();
+
                         var uri = EnsureAbsoluteUri(path, persistentAuthHelper);
+                        var accessToken = Utils.GetDefaultToken();
+                        if (!String.IsNullOrEmpty(accessToken))
+                        {
+                            return HttpInvoke(uri, new TokenCacheInfo { AccessToken = accessToken }, verb, verbose, content).Result;
+                        }
+
                         var env = GetAzureEnvironments(uri, persistentAuthHelper);
                         if (!persistentAuthHelper.IsCacheValid() || persistentAuthHelper.AzureEnvironments != env)
                         {
                             persistentAuthHelper.AzureEnvironments = env;
                             persistentAuthHelper.AcquireTokens().Wait();
                         }
-
-                        var content = ParseHttpContent(verb, _parameters);
-                        _parameters.ThrowIfUnknown();
 
                         var subscriptionId = GetTenantOrSubscription(uri);
                         TokenCacheInfo cacheInfo = persistentAuthHelper.GetToken(subscriptionId).Result;
