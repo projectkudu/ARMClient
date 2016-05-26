@@ -46,6 +46,11 @@ namespace ARMClient.Authentication.Utilities
             return Environment.GetEnvironmentVariable("ARMCLIENT_VERBOSE") == "1";
         }
 
+        public static string GetDefaultStamp()
+        {
+            return GetDefaultEnv() != AzureEnvironments.Dogfood ? null : Environment.GetEnvironmentVariable("ARMCLIENT_STAMP");
+        }
+
         public static void SetTraceListener(TraceListener listener)
         {
             _traceListener = listener;
@@ -95,6 +100,15 @@ namespace ARMClient.Authentication.Utilities
                 if (Utils.IsRdfe(uri))
                 {
                     client.DefaultRequestHeaders.Add("x-ms-version", "2013-10-01");
+                }
+
+                if (Utils.IsCSM(uri))
+                {
+                    var stamp = GetDefaultStamp();
+                    if (!String.IsNullOrEmpty(stamp))
+                    {
+                        client.DefaultRequestHeaders.Add("x-geoproxy-stamp", stamp);
+                    }
                 }
 
                 client.DefaultRequestHeaders.Add("x-ms-request-id", Guid.NewGuid().ToString());
@@ -154,6 +168,15 @@ namespace ARMClient.Authentication.Utilities
                     client.DefaultRequestHeaders.Add("x-ms-version", "2013-10-01");
                 }
 
+                if (Utils.IsCSM(uri))
+                {
+                    var stamp = GetDefaultStamp();
+                    if (!String.IsNullOrEmpty(stamp))
+                    {
+                        client.DefaultRequestHeaders.Add("x-geoproxy-stamp", stamp);
+                    }
+                }
+
                 client.DefaultRequestHeaders.Add("x-ms-request-id", Guid.NewGuid().ToString());
 
                 using (var response = await client.GetAsync(uri))
@@ -211,6 +234,12 @@ namespace ARMClient.Authentication.Utilities
         {
             var host = uri.Host;
             return Constants.AADGraphUrls.Any(url => url.IndexOf(host, StringComparison.OrdinalIgnoreCase) > 0);
+        }
+
+        public static bool IsCSM(Uri uri)
+        {
+            var host = uri.Host;
+            return Constants.CSMUrls.Any(url => url.IndexOf(host, StringComparison.OrdinalIgnoreCase) > 0);
         }
     }
 }

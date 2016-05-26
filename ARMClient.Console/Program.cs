@@ -159,7 +159,7 @@ namespace ARMClient
                         var content = ParseHttpContent(verb, _parameters);
                         _parameters.ThrowIfUnknown();
 
-                        var uri = EnsureAbsoluteUri(path, persistentAuthHelper);
+                        var uri = Utils.EnsureAbsoluteUri(path, persistentAuthHelper);
                         var accessToken = Utils.GetDefaultToken();
                         if (!String.IsNullOrEmpty(accessToken))
                         {
@@ -229,36 +229,6 @@ namespace ARMClient
                     Console.Write("*");
                 }
             }
-        }
-
-        static Uri EnsureAbsoluteUri(string path, PersistentAuthHelper persistentAuthHelper)
-        {
-            Uri ret;
-            if (Uri.TryCreate(path, UriKind.Absolute, out ret))
-            {
-                return ret;
-            }
-
-            var env = persistentAuthHelper.IsCacheValid() ? persistentAuthHelper.AzureEnvironments : Utils.GetDefaultEnv();
-            var parts = path.Split(new[] { '/', '?' }, StringSplitOptions.RemoveEmptyEntries);
-            if (parts.Length <= 0
-                || String.Equals(parts[0], "tenants", StringComparison.OrdinalIgnoreCase)
-                || String.Equals(parts[0], "subscriptions", StringComparison.OrdinalIgnoreCase)
-                || String.Equals(parts[0], "providers", StringComparison.OrdinalIgnoreCase))
-            {
-                return new Uri(new Uri(ARMClient.Authentication.Constants.CSMUrls[(int)env]), path);
-            }
-
-            Guid guid;
-            if (Guid.TryParse(parts[0], out guid))
-            {
-                if (path.Length > 1 && String.Equals(parts[1], "services", StringComparison.OrdinalIgnoreCase))
-                {
-                    return new Uri(new Uri(ARMClient.Authentication.Constants.RdfeUrls[(int)env]), path);
-                }
-            }
-
-            return new Uri(new Uri(ARMClient.Authentication.Constants.AADGraphUrls[(int)env]), path);
         }
 
         static void EnsureGuidFormat(string parameter)
