@@ -419,7 +419,7 @@ namespace ARMClient.Authentication.AADAuthentication
                 {
                     tenantId = tenantId,
                     displayName = "unknown",
-                    domain = (tenantIds.Length == 1 || tenantId != cacheInfo.TenantId) ? cacheInfo.TenantId : "unknown"
+                    domain = tenantId
                 };
 
                 TokenCacheInfo result = null;
