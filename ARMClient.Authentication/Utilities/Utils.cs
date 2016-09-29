@@ -51,6 +51,11 @@ namespace ARMClient.Authentication.Utilities
             return GetDefaultEnv() != AzureEnvironments.Dogfood ? null : Environment.GetEnvironmentVariable("ARMCLIENT_STAMP");
         }
 
+        public static string GetDefaultStampCert()
+        {
+            return GetDefaultEnv() != AzureEnvironments.Dogfood ? null : Environment.GetEnvironmentVariable("ARMCLIENT_STAMPCERT");
+        }
+
         public static void SetTraceListener(TraceListener listener)
         {
             _traceListener = listener;
@@ -108,6 +113,12 @@ namespace ARMClient.Authentication.Utilities
                     if (!String.IsNullOrEmpty(stamp))
                     {
                         client.DefaultRequestHeaders.Add("x-geoproxy-stamp", stamp);
+                    }
+
+                    var stampCert = GetDefaultStampCert();
+                    if (!String.IsNullOrEmpty(stampCert))
+                    {
+                        client.DefaultRequestHeaders.Add("x-geoproxy-stampcert", stampCert);
                     }
                 }
 
@@ -174,6 +185,12 @@ namespace ARMClient.Authentication.Utilities
                     if (!String.IsNullOrEmpty(stamp))
                     {
                         client.DefaultRequestHeaders.Add("x-geoproxy-stamp", stamp);
+                    }
+
+                    var stampCert = GetDefaultStampCert();
+                    if (!String.IsNullOrEmpty(stampCert))
+                    {
+                        client.DefaultRequestHeaders.Add("x-geoproxy-stampcert", stampCert);
                     }
                 }
 

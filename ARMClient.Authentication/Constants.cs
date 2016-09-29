@@ -55,7 +55,7 @@ namespace ARMClient.Authentication
         {
             ".scm.chinacloudsites.cn",
             ".scm.antdir0.antares-test.windows-int.net",
-            ".waws-ppedf.windows-int.net",
+            ".windows-int.net",
             ".scm.azurewebsites.net",
             ".scm.azurewebsites.us"
         };

@@ -115,6 +115,26 @@ namespace ARMClient
                         TokenCacheInfo cacheInfo = persistentAuthHelper.GetToken(subscriptionId).Result;
                         return HttpInvoke(uri, cacheInfo, "get", Utils.GetDefaultVerbose(), null).Result;
                     }
+                    // https://azure.microsoft.com/en-us/documentation/articles/resource-group-authenticate-service-principal/
+                    // https://github.com/Azure-Samples/active-directory-dotnet-graphapi-console/blob/master/GraphConsoleAppV3/Program.cs
+                    else if (String.Equals(verb, "add-app", StringComparison.OrdinalIgnoreCase))
+                    {
+                        var tenant = _parameters.Get(1, keyName: "tenant");
+                        var app = _parameters.Get(2, keyName: "app");
+                        _parameters.ThrowIfUnknown();
+
+                        Guid unused;
+                        var isGuid = Guid.TryParse(app, out unused);
+
+                        var path = isGuid ? String.Format("/{0}/applications?$filter=appId eq '{1}'&api-version=1.6", tenant, app)
+                            : String.Format("/{0}/applications?$filter=displayName eq '{1}'&api-version=1.6", tenant, app);
+
+                        var uri = EnsureAbsoluteUri(path, persistentAuthHelper);
+
+                        var subscriptionId = GetTenantOrSubscription(uri);
+                        TokenCacheInfo cacheInfo = persistentAuthHelper.GetToken(subscriptionId).Result;
+                        return HttpInvoke(uri, cacheInfo, "get", Utils.GetDefaultVerbose(), null).Result;
+                    }
                     else if (String.Equals(verb, "get-app", StringComparison.OrdinalIgnoreCase))
                     {
                         var tenant = _parameters.Get(1, keyName: "tenant");
@@ -126,6 +146,22 @@ namespace ARMClient
 
                         var path = isGuid ? String.Format("/{0}/applications?$filter=appId eq '{1}'&api-version=1.6", tenant, app)
                             : String.Format("/{0}/applications?$filter=displayName eq '{1}'&api-version=1.6", tenant, app);
+
+                        var uri = EnsureAbsoluteUri(path, persistentAuthHelper);
+
+                        var subscriptionId = GetTenantOrSubscription(uri);
+                        TokenCacheInfo cacheInfo = persistentAuthHelper.GetToken(subscriptionId).Result;
+                        return HttpInvoke(uri, cacheInfo, "get", Utils.GetDefaultVerbose(), null).Result;
+                    }
+                    // https://msdn.microsoft.com/library/azure/ad/graph/api/entity-and-complex-type-reference#serviceprincipalentity
+                    else if (String.Equals(verb, "get-spns", StringComparison.OrdinalIgnoreCase))
+                    {
+                        var tenant = _parameters.Get(1, keyName: "tenant");
+                        var app = _parameters.Get(2, keyName: "app");
+                        _parameters.ThrowIfUnknown();
+
+                        Guid appGuid = new Guid(app);
+                        var path = String.Format("/{0}/applications/{1}/serviceprincipal?api-version=1.6", tenant, appGuid);
 
                         var uri = EnsureAbsoluteUri(path, persistentAuthHelper);
 
