@@ -266,15 +266,22 @@ namespace ARMClient
 
         static void DumpException(Exception ex)
         {
-            if (ex.InnerException != null)
+            if (Utils.GetDefaultVerbose())
             {
-                DumpException(ex.InnerException);
+                Console.WriteLine(ex);
             }
-
-            // Aggregate exceptions themselves don't have interesting messages
-            if (!(ex is AggregateException))
+            else
             {
-                Console.WriteLine(ex.Message);
+                if (ex.InnerException != null)
+                {
+                    DumpException(ex.InnerException);
+                }
+
+                // Aggregate exceptions themselves don't have interesting messages
+                if (!(ex is AggregateException))
+                {
+                    Console.WriteLine(ex.Message);
+                }
             }
         }
 

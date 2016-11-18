@@ -11,17 +11,21 @@ namespace ARMClient.Authentication
             "https://login.chinacloudapi.cn",
             "https://login.windows-ppe.net",
             "https://login.windows-ppe.net",
-            "https://login.windows.net",
-            "https://login.windows.net"
+            "https://login.microsoftonline.com",
+            "https://login.microsoftonline.com",
+            "https://login.microsoftonline.de",
+            "https://login.microsoftonline.us"
         };
 
         public static string[] AADGraphUrls = new[]
         {
-            "https://graph.windows.net",
+            "https://graph.chinacloudapi.cn",
             "https://graph.ppe.windows.net",
             "https://graph.ppe.windows.net",
             "https://graph.windows.net",
-            "https://graph.windows.net"
+            "https://graph.windows.net",
+            "https://graph.cloudapi.de",
+            "https://graph.cloudapi.us"
         };
 
         public static string[] CSMUrls = new[]
@@ -30,7 +34,9 @@ namespace ARMClient.Authentication
             "https://api-current.resources.windows-int.net",
             "https://api-dogfood.resources.windows-int.net",
             "https://management.azure.com",
-            "https://management.usgovcloudapi.net"
+            "https://management.usgovcloudapi.net",
+            "https://management.microsoftazure.de",
+            "https://notsupport.com"
         };
 
         public static string[] RdfeUrls = new[]
@@ -39,7 +45,9 @@ namespace ARMClient.Authentication
             "https://umapi.rdfetest.dnsdemo4.com",
             "https://umapi-preview.core.windows-int.net",
             "https://management.core.windows.net",
-            "https://management.core.usgovcloudapi.net"
+            "https://management.core.usgovcloudapi.net",
+            "https://management.core.cloudapi.de/",
+            "https://notsupport.com/"
         };
 
         public static string[] CSMResources = new[]
@@ -48,7 +56,9 @@ namespace ARMClient.Authentication
             "https://management.core.windows.net/",
             "https://management.core.windows.net/",
             "https://management.core.windows.net/",
-            "https://management.core.usgovcloudapi.net/"
+            "https://management.core.usgovcloudapi.net/",
+            "https://management.core.cloudapi.de/",
+            "https://notsupport.com/"
         };
 
         public static string[] SCMSuffixes = new[]
@@ -57,7 +67,9 @@ namespace ARMClient.Authentication
             ".scm.antdir0.antares-test.windows-int.net",
             ".windows-int.net",
             ".scm.azurewebsites.net",
-            ".scm.azurewebsites.us"
+            ".scm.azurewebsites.us",
+            ".scm.azurewebsites.de",
+            ".notsupport.com"
         };
 
         public static string[] VsoSuffixes = new[]
@@ -66,9 +78,10 @@ namespace ARMClient.Authentication
             ".notsupport.com",
             ".tfsallin.net",
             ".visualstudio.com",
+            ".notsupport.com",
+            ".notsupport.com",
             ".notsupport.com"
         };
-
 
         public static string[] InfrastructureTenantIds = new[]
         {
