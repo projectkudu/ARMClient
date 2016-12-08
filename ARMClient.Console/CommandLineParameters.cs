@@ -6,11 +6,11 @@ namespace ARMClient
 {
     class CommandLineParameters
     {
-        private Dictionary<string, string> _parameters = null;
+        private Dictionary<string, object> _parameters = null;
 
         public CommandLineParameters(string[] args)
         {
-            _parameters = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            _parameters = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
 
             string parameter = null;
             var index = 0;
@@ -25,13 +25,13 @@ namespace ARMClient
                         throw new CommandLineException(String.Format("Parameter '{0}' is invalid!", arg));
                     }
 
-                    _parameters[arg] = String.Empty;
+                    _parameters[arg] = MergeArguments(arg);
                     parameter = arg;
                     index = -1;
                 }
                 else if (parameter != null)
                 {
-                    _parameters[parameter] = arg;
+                    _parameters[parameter] = MergeArguments(parameter, arg);
                     parameter = null;
                 }
                 else
@@ -42,7 +42,7 @@ namespace ARMClient
                         throw new CommandLineException(String.Format("Parameter '{0}' is invalid!", arg));
                     }
 
-                    _parameters[index.ToString()] = arg;
+                    _parameters[index.ToString()] = MergeArguments(index.ToString(), arg);
                     index++;
                 }
             }
@@ -50,7 +50,12 @@ namespace ARMClient
 
         public string Get(object key, string keyName = null, bool requires = true)
         {
-            string value = null;
+            return GetValue<string>(key, keyName, requires);
+        }
+
+        public T GetValue<T>(object key, string keyName = null, bool requires = true)
+        {
+            object value = null;
             if (!_parameters.TryGetValue(key.ToString(), out value))
             {
                 if (requires)
@@ -58,11 +63,11 @@ namespace ARMClient
                     throw new CommandLineException(String.Format("Parameter '{0}' is required!", keyName ?? key));
                 }
 
-                return null;
+                return default(T);
             }
 
             _parameters.Remove(key.ToString());
-            return value;
+            return (T)value;
         }
 
         public void ThrowIfUnknown()
@@ -72,6 +77,40 @@ namespace ARMClient
                 var pair = _parameters.First();
                 throw new CommandLineException(String.Format("Parameter '{0}' is invalid!", pair.Key.StartsWith("-") ? pair.Key : pair.Value));
             }
+        }
+
+        private object MergeArguments(string key, string value = null)
+        {
+            if (string.Equals(key, "-h", StringComparison.OrdinalIgnoreCase))
+            {
+                object obj = null;
+                if (!_parameters.TryGetValue(key, out obj))
+                {
+                    obj = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
+                }
+
+                var headers = (Dictionary<string, List<string>>)obj;
+                if (!string.IsNullOrEmpty(value))
+                {
+                    var parts = value.Split(new[] { ':' }, 2).Select(v => v.Trim()).ToArray();
+                    if (parts.Length > 1)
+                    {
+                        var headerName = parts[0];
+                        List<string> values = null;
+                        if (!headers.TryGetValue(headerName, out values))
+                        {
+                            headers[headerName] = values = new List<string>();
+                        }
+
+                        var headerValues = parts[1];
+                        values.AddRange(headerValues.Split(';').Select(v => v.Trim()).Where(v => !string.IsNullOrEmpty(v)));
+                    }
+                }
+
+                return headers;
+            }
+
+            return value ?? string.Empty;
         }
     }
 

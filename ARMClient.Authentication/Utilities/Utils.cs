@@ -1,12 +1,14 @@
-﻿using ARMClient.Authentication.AADAuthentication;
-using ARMClient.Authentication.Contracts;
-using System;
+﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Net.Http;
-using System.Threading.Tasks;
-using System.IO;
+using System.Net.Http.Headers;
 using System.Text;
+using System.Threading.Tasks;
+using ARMClient.Authentication.AADAuthentication;
+using ARMClient.Authentication.Contracts;
 using Newtonsoft.Json.Linq;
 
 namespace ARMClient.Authentication.Utilities
@@ -94,17 +96,17 @@ namespace ARMClient.Authentication.Utilities
             }
         }
 
-        public static async Task<int> HttpInvoke(Uri uri, TokenCacheInfo cacheInfo, string verb, DelegatingHandler handler, HttpContent content)
+        public static async Task<int> HttpInvoke(Uri uri, TokenCacheInfo cacheInfo, string verb, DelegatingHandler handler, HttpContent content, Dictionary<string, List<string>> headers = null)
         {
             using (var client = new HttpClient(handler))
             {
-                client.DefaultRequestHeaders.Add("Authorization", cacheInfo.CreateAuthorizationHeader());
-                client.DefaultRequestHeaders.Add("User-Agent", Constants.UserAgent.Value);
-                client.DefaultRequestHeaders.Add("Accept", Constants.JsonContentType);
+                client.DefaultRequestHeaders.Add("Authorization", cacheInfo.CreateAuthorizationHeader(), headers);
+                client.DefaultRequestHeaders.Add("User-Agent", Constants.UserAgent.Value, headers);
+                client.DefaultRequestHeaders.Add("Accept", Constants.JsonContentType, headers);
 
                 if (Utils.IsRdfe(uri))
                 {
-                    client.DefaultRequestHeaders.Add("x-ms-version", "2013-10-01");
+                    client.DefaultRequestHeaders.Add("x-ms-version", "2013-10-01", headers);
                 }
 
                 if (Utils.IsCSM(uri))
@@ -112,17 +114,19 @@ namespace ARMClient.Authentication.Utilities
                     var stamp = GetDefaultStamp();
                     if (!String.IsNullOrEmpty(stamp))
                     {
-                        client.DefaultRequestHeaders.Add("x-geoproxy-stamp", stamp);
+                        client.DefaultRequestHeaders.Add("x-geoproxy-stamp", stamp, headers);
                     }
 
                     var stampCert = GetDefaultStampCert();
                     if (!String.IsNullOrEmpty(stampCert))
                     {
-                        client.DefaultRequestHeaders.Add("x-geoproxy-stampcert", stampCert);
+                        client.DefaultRequestHeaders.Add("x-geoproxy-stampcert", stampCert, headers);
                     }
                 }
 
-                client.DefaultRequestHeaders.Add("x-ms-request-id", Guid.NewGuid().ToString());
+                client.DefaultRequestHeaders.Add("x-ms-request-id", Guid.NewGuid().ToString(), headers);
+
+                client.DefaultRequestHeaders.AddRemainingHeaders(headers);
 
                 HttpResponseMessage response = null;
                 if (String.Equals(verb, "get", StringComparison.OrdinalIgnoreCase))
@@ -163,6 +167,32 @@ namespace ARMClient.Authentication.Utilities
 
                     return (-1) * (int)response.StatusCode;
                 }
+            }
+        }
+
+        private static void Add(this HttpRequestHeaders requestHeaders, string name, string value, Dictionary<string, List<string>> headers)
+        {
+            List<string> values;
+            if (headers != null && headers.TryGetValue(name, out values))
+            {
+                requestHeaders.Add(name, values);
+                headers.Remove(name);
+            }
+            else
+            {
+                requestHeaders.Add(name, value);
+            }
+        }
+
+        private static void AddRemainingHeaders(this HttpRequestHeaders requestHeaders, Dictionary<string, List<string>> headers)
+        {
+            if (headers != null)
+            {
+                foreach (var pair in headers)
+                {
+                    requestHeaders.Add(pair.Key, pair.Value);
+                }
+                headers.Clear();
             }
         }
 

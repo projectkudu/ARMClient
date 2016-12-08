@@ -79,7 +79,7 @@ namespace ARMClient
                 originalColor = Console.ForegroundColor;
                 try
                 {
-                    Console.ForegroundColor = response.IsSuccessStatusCode ? successColor : failureColor;
+                    Console.ForegroundColor = (int)response.StatusCode < 400 ? successColor : failureColor;
                     Console.WriteLine("HTTP/{0} {1} {2}", response.Version, (int)response.StatusCode, response.StatusCode);
                 }
                 finally

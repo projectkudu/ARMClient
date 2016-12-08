@@ -13,6 +13,7 @@ using ARMClient.Authentication.AADAuthentication;
 using ARMClient.Authentication.Contracts;
 using ARMClient.Authentication.Utilities;
 using Newtonsoft.Json.Linq;
+using System.Collections.Generic;
 
 namespace ARMClient
 {
@@ -157,13 +158,14 @@ namespace ARMClient
                         }
 
                         var content = ParseHttpContent(verb, _parameters);
+                        var headers = _parameters.GetValue<Dictionary<string, List<string>>>("-h", requires: false);
                         _parameters.ThrowIfUnknown();
 
                         var uri = Utils.EnsureAbsoluteUri(path, persistentAuthHelper);
                         var accessToken = Utils.GetDefaultToken();
                         if (!String.IsNullOrEmpty(accessToken))
                         {
-                            return HttpInvoke(uri, new TokenCacheInfo { AccessToken = accessToken }, verb, verbose, content).Result;
+                            return HttpInvoke(uri, new TokenCacheInfo { AccessToken = accessToken }, verb, verbose, content, headers).Result;
                         }
 
                         var env = GetAzureEnvironments(uri, persistentAuthHelper);
@@ -175,7 +177,7 @@ namespace ARMClient
 
                         var subscriptionId = GetTenantOrSubscription(uri);
                         TokenCacheInfo cacheInfo = persistentAuthHelper.GetToken(subscriptionId).Result;
-                        return HttpInvoke(uri, cacheInfo, verb, verbose, content).Result;
+                        return HttpInvoke(uri, cacheInfo, verb, verbose, content, headers).Result;
                     }
                     else
                     {
@@ -297,7 +299,7 @@ namespace ARMClient
 
             Console.WriteLine();
             Console.WriteLine("Call ARM api");
-            Console.WriteLine("    ARMClient.exe [get|post|put|patch|delete] [url] (<@file|content>) (-verbose)");
+            Console.WriteLine("    ARMClient.exe [get|post|put|patch|delete] [url] (<@file|content>) (-h \"header: value\") (-verbose)");
 
             Console.WriteLine();
             Console.WriteLine("Copy token to clipboard");
@@ -350,10 +352,10 @@ namespace ARMClient
             return null;
         }
 
-        static async Task<int> HttpInvoke(Uri uri, TokenCacheInfo cacheInfo, string verb, bool verbose, HttpContent content)
+        static async Task<int> HttpInvoke(Uri uri, TokenCacheInfo cacheInfo, string verb, bool verbose, HttpContent content, Dictionary<string, List<string>> headers)
         {
             var logginerHandler = new HttpLoggingHandler(new HttpClientHandler(), verbose);
-            return await Utils.HttpInvoke(uri, cacheInfo, verb, logginerHandler, content);
+            return await Utils.HttpInvoke(uri, cacheInfo, verb, logginerHandler, content, headers);
         }
 
         //http://stackoverflow.com/questions/4810841/how-can-i-pretty-print-json-using-javascript

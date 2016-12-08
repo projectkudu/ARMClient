@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -82,6 +83,7 @@ namespace ARMClient
                     else if (String.Equals(verb, "get-tenant", StringComparison.OrdinalIgnoreCase))
                     {
                         var tenant = _parameters.Get(1, keyName: "tenant");
+                        var headers = _parameters.GetValue<Dictionary<string, List<string>>>("-h", requires: false);
                         _parameters.ThrowIfUnknown();
 
                         var path = String.Format("/{0}/tenantDetails?api-version=1.6", tenant);
@@ -89,11 +91,12 @@ namespace ARMClient
 
                         var subscriptionId = GetTenantOrSubscription(uri);
                         TokenCacheInfo cacheInfo = persistentAuthHelper.GetToken(subscriptionId).Result;
-                        return HttpInvoke(uri, cacheInfo, "get", Utils.GetDefaultVerbose(), null).Result;
+                        return HttpInvoke(uri, cacheInfo, "get", Utils.GetDefaultVerbose(), null, headers).Result;
                     }
                     else if (String.Equals(verb, "get-tenant", StringComparison.OrdinalIgnoreCase))
                     {
                         var tenant = _parameters.Get(1, keyName: "tenant");
+                        var headers = _parameters.GetValue<Dictionary<string, List<string>>>("-h", requires: false);
                         _parameters.ThrowIfUnknown();
 
                         var path = String.Format("/{0}/tenantDetails/{0}?api-version=1.6", tenant);
@@ -101,11 +104,12 @@ namespace ARMClient
 
                         var subscriptionId = GetTenantOrSubscription(uri);
                         TokenCacheInfo cacheInfo = persistentAuthHelper.GetToken(subscriptionId).Result;
-                        return HttpInvoke(uri, cacheInfo, "get", Utils.GetDefaultVerbose(), null).Result;
+                        return HttpInvoke(uri, cacheInfo, "get", Utils.GetDefaultVerbose(), null, headers).Result;
                     }
                     else if (String.Equals(verb, "get-apps", StringComparison.OrdinalIgnoreCase))
                     {
                         var tenant = _parameters.Get(1, keyName: "tenant");
+                        var headers = _parameters.GetValue<Dictionary<string, List<string>>>("-h", requires: false);
                         _parameters.ThrowIfUnknown();
 
                         var path = String.Format("/{0}/applications?api-version=1.6", tenant);
@@ -113,7 +117,7 @@ namespace ARMClient
 
                         var subscriptionId = GetTenantOrSubscription(uri);
                         TokenCacheInfo cacheInfo = persistentAuthHelper.GetToken(subscriptionId).Result;
-                        return HttpInvoke(uri, cacheInfo, "get", Utils.GetDefaultVerbose(), null).Result;
+                        return HttpInvoke(uri, cacheInfo, "get", Utils.GetDefaultVerbose(), null, headers).Result;
                     }
                     // https://azure.microsoft.com/en-us/documentation/articles/resource-group-authenticate-service-principal/
                     // https://github.com/Azure-Samples/active-directory-dotnet-graphapi-console/blob/master/GraphConsoleAppV3/Program.cs
@@ -121,6 +125,7 @@ namespace ARMClient
                     {
                         var tenant = _parameters.Get(1, keyName: "tenant");
                         var app = _parameters.Get(2, keyName: "app");
+                        var headers = _parameters.GetValue<Dictionary<string, List<string>>>("-h", requires: false);
                         _parameters.ThrowIfUnknown();
 
                         Guid unused;
@@ -133,12 +138,13 @@ namespace ARMClient
 
                         var subscriptionId = GetTenantOrSubscription(uri);
                         TokenCacheInfo cacheInfo = persistentAuthHelper.GetToken(subscriptionId).Result;
-                        return HttpInvoke(uri, cacheInfo, "get", Utils.GetDefaultVerbose(), null).Result;
+                        return HttpInvoke(uri, cacheInfo, "get", Utils.GetDefaultVerbose(), null, headers).Result;
                     }
                     else if (String.Equals(verb, "get-app", StringComparison.OrdinalIgnoreCase))
                     {
                         var tenant = _parameters.Get(1, keyName: "tenant");
                         var app = _parameters.Get(2, keyName: "app");
+                        var headers = _parameters.GetValue<Dictionary<string, List<string>>>("-h", requires: false);
                         _parameters.ThrowIfUnknown();
 
                         Guid unused;
@@ -151,13 +157,14 @@ namespace ARMClient
 
                         var subscriptionId = GetTenantOrSubscription(uri);
                         TokenCacheInfo cacheInfo = persistentAuthHelper.GetToken(subscriptionId).Result;
-                        return HttpInvoke(uri, cacheInfo, "get", Utils.GetDefaultVerbose(), null).Result;
+                        return HttpInvoke(uri, cacheInfo, "get", Utils.GetDefaultVerbose(), null, headers).Result;
                     }
                     // https://msdn.microsoft.com/library/azure/ad/graph/api/entity-and-complex-type-reference#serviceprincipalentity
                     else if (String.Equals(verb, "get-spns", StringComparison.OrdinalIgnoreCase))
                     {
                         var tenant = _parameters.Get(1, keyName: "tenant");
                         var app = _parameters.Get(2, keyName: "app");
+                        var headers = _parameters.GetValue<Dictionary<string, List<string>>>("-h", requires: false);
                         _parameters.ThrowIfUnknown();
 
                         Guid appGuid = new Guid(app);
@@ -167,7 +174,7 @@ namespace ARMClient
 
                         var subscriptionId = GetTenantOrSubscription(uri);
                         TokenCacheInfo cacheInfo = persistentAuthHelper.GetToken(subscriptionId).Result;
-                        return HttpInvoke(uri, cacheInfo, "get", Utils.GetDefaultVerbose(), null).Result;
+                        return HttpInvoke(uri, cacheInfo, "get", Utils.GetDefaultVerbose(), null, headers).Result;
                     }
                     else if (String.Equals(verb, "add-cred", StringComparison.OrdinalIgnoreCase))
                     {
@@ -196,6 +203,7 @@ namespace ARMClient
                             appKey = Utils.EnsureBase64Key(appKey);
                         }
 
+                        var headers = _parameters.GetValue<Dictionary<string, List<string>>>("-h", requires: false);
                         _parameters.ThrowIfUnknown();
 
                         var appObject = GetAppObject(persistentAuthHelper, tenant, app).Result;
@@ -217,7 +225,7 @@ namespace ARMClient
                         var subscriptionId = GetTenantOrSubscription(uri);
                         TokenCacheInfo cacheInfo = persistentAuthHelper.GetToken(subscriptionId).Result;
 
-                        return HttpInvoke(uri, cacheInfo, "patch", Utils.GetDefaultVerbose(), content).Result;
+                        return HttpInvoke(uri, cacheInfo, "patch", Utils.GetDefaultVerbose(), content, headers).Result;
                     }
                     else if (String.Equals(verb, "del-cred", StringComparison.OrdinalIgnoreCase))
                     {
@@ -225,6 +233,8 @@ namespace ARMClient
                         var app = _parameters.Get(2, keyName: "app");
                         var keyId = _parameters.Get(3, keyName: "keyId");
                         EnsureGuidFormat(keyId);
+
+                        var headers = _parameters.GetValue<Dictionary<string, List<string>>>("-h", requires: false);
                         _parameters.ThrowIfUnknown();
 
                         var appObject = GetAppObject(persistentAuthHelper, tenant, app).Result;
@@ -237,11 +247,12 @@ namespace ARMClient
                         var subscriptionId = GetTenantOrSubscription(uri);
                         TokenCacheInfo cacheInfo = persistentAuthHelper.GetToken(subscriptionId).Result;
 
-                        return HttpInvoke(uri, cacheInfo, "patch", Utils.GetDefaultVerbose(), content).Result;
+                        return HttpInvoke(uri, cacheInfo, "patch", Utils.GetDefaultVerbose(), content, headers).Result;
                     }
                     else if (String.Equals(verb, "get-users", StringComparison.OrdinalIgnoreCase))
                     {
                         var tenant = _parameters.Get(1, keyName: "tenant");
+                        var headers = _parameters.GetValue<Dictionary<string, List<string>>>("-h", requires: false);
                         _parameters.ThrowIfUnknown();
 
                         var path = String.Format("/{0}/users?api-version=1.6", tenant);
@@ -249,12 +260,13 @@ namespace ARMClient
 
                         var subscriptionId = GetTenantOrSubscription(uri);
                         TokenCacheInfo cacheInfo = persistentAuthHelper.GetToken(subscriptionId).Result;
-                        return HttpInvoke(uri, cacheInfo, "get", Utils.GetDefaultVerbose(), null).Result;
+                        return HttpInvoke(uri, cacheInfo, "get", Utils.GetDefaultVerbose(), null, headers).Result;
                     }
                     else if (String.Equals(verb, "get-user", StringComparison.OrdinalIgnoreCase))
                     {
                         var tenant = _parameters.Get(1, keyName: "tenant");
                         var user = _parameters.Get(2, keyName: "user");
+                        var headers = _parameters.GetValue<Dictionary<string, List<string>>>("-h", requires: false);
                         _parameters.ThrowIfUnknown();
 
                         var path = String.Format("/{0}/users/{1}?api-version=1.6", tenant, user);
@@ -266,12 +278,13 @@ namespace ARMClient
 
                         var subscriptionId = GetTenantOrSubscription(uri);
                         TokenCacheInfo cacheInfo = persistentAuthHelper.GetToken(subscriptionId).Result;
-                        return HttpInvoke(uri, cacheInfo, "get", Utils.GetDefaultVerbose(), null).Result;
+                        return HttpInvoke(uri, cacheInfo, "get", Utils.GetDefaultVerbose(), null, headers).Result;
                     }
                     else if (String.Equals(verb, "get-groups", StringComparison.OrdinalIgnoreCase))
                     {
                         var tenant = _parameters.Get(1, keyName: "tenant");
                         var user = _parameters.Get(2, keyName: "user");
+                        var headers = _parameters.GetValue<Dictionary<string, List<string>>>("-h", requires: false);
                         _parameters.ThrowIfUnknown();
 
 
@@ -281,7 +294,7 @@ namespace ARMClient
                         var subscriptionId = GetTenantOrSubscription(uri);
                         TokenCacheInfo cacheInfo = persistentAuthHelper.GetToken(subscriptionId).Result;
                         var content = new StringContent("{\"securityEnabledOnly\": false}", Encoding.UTF8, "application/json");
-                        return HttpInvoke(uri, cacheInfo, "post", Utils.GetDefaultVerbose(), content).Result;
+                        return HttpInvoke(uri, cacheInfo, "post", Utils.GetDefaultVerbose(), content, headers).Result;
                     }
                     else
                     {
@@ -585,10 +598,10 @@ namespace ARMClient
             return null;
         }
 
-        static async Task<int> HttpInvoke(Uri uri, TokenCacheInfo cacheInfo, string verb, bool verbose, HttpContent content)
+        static async Task<int> HttpInvoke(Uri uri, TokenCacheInfo cacheInfo, string verb, bool verbose, HttpContent content, Dictionary<string, List<string>> headers)
         {
             var logginerHandler = new HttpLoggingHandler(new HttpClientHandler(), verbose);
-            return await Utils.HttpInvoke(uri, cacheInfo, verb, logginerHandler, content);
+            return await Utils.HttpInvoke(uri, cacheInfo, verb, logginerHandler, content, headers);
         }
 
         //http://stackoverflow.com/questions/4810841/how-can-i-pretty-print-json-using-javascript
