@@ -300,6 +300,7 @@ namespace ARMClient
             Console.WriteLine();
             Console.WriteLine("Call ARM api");
             Console.WriteLine("    ARMClient.exe [get|post|put|patch|delete] [url] (<@file|content>) (-h \"header: value\") (-verbose)");
+            Console.WriteLine("    Use '-h' multiple times to add more than one custom HTTP header.");
 
             Console.WriteLine();
             Console.WriteLine("Copy token to clipboard");
