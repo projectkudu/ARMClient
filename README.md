@@ -13,7 +13,7 @@ Check out [wiki](https://github.com/projectkudu/ARMClient/wiki) for more details
         ARMClient.exe login [environment name]
     
     Call ARM api
-        ARMClient.exe [get|post|put|patch|delete] [url] (<@file|content>) (-h \"header: value\") (-verbose)");
+        ARMClient.exe [get|post|put|patch|delete] [url] (<@file|content>) (-h "header: value") (-verbose)
         Use '-h' multiple times to add more than one custom HTTP header.
     
     Copy token to clipboard
