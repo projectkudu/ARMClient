@@ -371,7 +371,7 @@ namespace ARMClient
         {
             var cred = new JObject();
             cred["startDate"] = DateTime.UtcNow.ToString("o");
-            cred["endDate"] = DateTime.UtcNow.AddYears(1).ToString("o");
+            cred["endDate"] = DateTime.UtcNow.AddYears(2).ToString("o");
             cred["value"] = appKey;
 
             var creds = GetPasswordCredentials(appObject);
@@ -387,8 +387,8 @@ namespace ARMClient
         static HttpContent GetPatchContent(JObject appObject, X509Certificate2 certificate)
         {
             var cred = new JObject();
-            cred["startDate"] = DateTime.UtcNow.ToString("o");
-            cred["endDate"] = DateTime.UtcNow.AddYears(1).ToString("o");
+            cred["startDate"] = certificate.NotBefore.ToUniversalTime().ToString("o");
+            cred["endDate"] = certificate.NotAfter.ToUniversalTime().ToString("o");
             cred["type"] = "AsymmetricX509Cert";
             cred["usage"] = "Verify";
             cred["customKeyIdentifier"] = Convert.ToBase64String(certificate.GetCertHash());
