@@ -168,6 +168,10 @@ namespace ARMClient.Library
             return HttpInvoke(new Uri(uri), httpVerb, args.Length > 0 ? args[0] : string.Empty);
         }
 
+        public Task<HttpResponseMessage> HttpInvoke(HttpMethod method, Uri uri, object objectPayload = null)
+        {
+            return HttpInvoke(uri, method.Method, objectPayload);
+        }
         private async Task<HttpResponseMessage> HttpInvoke(Uri uri, string verb, object objectPayload)
         {
             var payload = JsonConvert.SerializeObject(objectPayload);
