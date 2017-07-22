@@ -1,8 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Security.Cryptography.X509Certificates;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using ARMClient.Authentication.Contracts;
@@ -11,6 +14,8 @@ using ARMClient.Authentication.TenantStorage;
 using ARMClient.Authentication.TokenStorage;
 using ARMClient.Authentication.Utilities;
 using Microsoft.IdentityModel.Clients.ActiveDirectory;
+using Microsoft.Win32.SafeHandles;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
 namespace ARMClient.Authentication.AADAuthentication
@@ -47,6 +52,172 @@ namespace ARMClient.Authentication.AADAuthentication
 
             this.TokenStorage.SaveCache(tokenCache);
             this.TenantStorage.SaveCache(tenantCache);
+        }
+
+        public async Task AzLogin()
+        {
+            this.TokenStorage.ClearCache();
+            this.TenantStorage.ClearCache();
+
+            var tokens = GetAzLoginTokens();
+
+            var tokenCache = new CustomTokenCache();
+            var tenantCache = this.TenantStorage.GetCache();
+            TokenCacheInfo recentInfo = null;
+            foreach (var token in tokens)
+            {
+                var result = token.ToTokenCacheInfo();
+                Guid unused;
+                if (!Guid.TryParse(result.TenantId, out unused))
+                {
+                    continue;
+                }
+
+                tokenCache.Add(result);
+
+                var tenantId = result.TenantId;
+                var info = new TenantCacheInfo
+                {
+                    tenantId = tenantId,
+                    displayName = "unknown",
+                    domain = tenantId
+                };
+
+                Utils.Trace.WriteLine(string.Format("User: {0}, Tenant: {1}", result.DisplayableId, tenantId));
+                try
+                {
+                    var subscriptions = await GetSubscriptions(result);
+                    Utils.Trace.WriteLine(string.Format("\tThere are {0} subscriptions", subscriptions.Length));
+
+                    info.subscriptions = subscriptions.Select(subscription => new SubscriptionCacheInfo
+                    {
+                        subscriptionId = subscription.subscriptionId,
+                        displayName = subscription.displayName
+                    }).ToArray();
+
+                    if (recentInfo == null || info.subscriptions.Length > 0)
+                    {
+                        recentInfo = result;
+                    }
+
+                    foreach (var subscription in subscriptions)
+                    {
+                        Utils.Trace.WriteLine(string.Format("\tSubscription {0} ({1})", subscription.subscriptionId, subscription.displayName));
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Utils.Trace.WriteLine(string.Format("\t{0}!", ex.Message));
+                }
+
+                tenantCache[tenantId] = info;
+                if (!String.IsNullOrEmpty(info.domain) && info.domain != "unknown")
+                {
+                    tenantCache[info.domain] = info;
+                }
+
+                Utils.Trace.WriteLine(string.Empty);
+            }
+
+            if (recentInfo != null)
+            {
+                this.TokenStorage.SaveRecentToken(recentInfo, Constants.CSMResources[(int)AzureEnvironments]);
+            }
+
+            this.TokenStorage.SaveCache(tokenCache);
+            this.TenantStorage.SaveCache(tenantCache);
+        }
+
+        private AzAccessToken[] GetAzLoginTokens()
+        {
+            var azCmd = Environment.ExpandEnvironmentVariables(@"%ProgramFiles(x86)%\Microsoft SDKs\Azure\CLI2\wbin\az.cmd");
+            if (!File.Exists(azCmd))
+            {
+                throw new InvalidOperationException("Azure cli is required.  Please download and install from https://aka.ms/InstallAzureCliWindows");
+            }
+
+            var accessTokensFile = Environment.ExpandEnvironmentVariables(@"%USERPROFILE%\.azure\accessTokens.json");
+            var backupContent = File.Exists(accessTokensFile) ? File.ReadAllText(accessTokensFile) : null;
+            try
+            {
+                if (File.Exists(accessTokensFile))
+                {
+                    File.Delete(accessTokensFile);
+                }
+
+                var processInfo = new ProcessStartInfo(azCmd, "login");
+                processInfo.CreateNoWindow = true;
+                processInfo.UseShellExecute = false;
+                processInfo.RedirectStandardError = true;
+                processInfo.RedirectStandardOutput = true;
+
+                // start
+                var process = Process.Start(processInfo);
+                var processName = process.ProcessName;
+                var processId = process.Id;
+
+                // hook process event
+                var processEvent = new ManualResetEvent(true);
+                processEvent.SafeWaitHandle = new SafeWaitHandle(process.Handle, false);
+
+                var hasOutput = false;
+                var stdOutput = new StringBuilder();
+                DataReceivedEventHandler stdHandler = (object sender, DataReceivedEventArgs e) =>
+                {
+                    if (e.Data != null)
+                    {
+                        if (!hasOutput)
+                        {
+                            Console.WriteLine();
+                            hasOutput = true;
+                        }
+
+                        if (e.Data.IndexOf("[") >= 0 || stdOutput.Length > 0)
+                        {
+                            stdOutput.Append(e.Data);
+                        }
+                        else
+                        {
+                            Console.Write(e.Data);
+                        }
+                    }
+                };
+
+                // hoook stdout and stderr
+                process.OutputDataReceived += stdHandler;
+                process.BeginOutputReadLine();
+                process.ErrorDataReceived += stdHandler;
+                process.BeginErrorReadLine();
+
+                // wait for ready
+                Console.Write("Executing az login.");
+                while (!processEvent.WaitOne(2000) && !hasOutput)
+                {
+                    Console.Write(".");
+                }
+
+                processEvent.WaitOne();
+                if (process.ExitCode != 0)
+                {
+                    // if success, it contains the list of subscriptions
+                    Console.WriteLine(stdOutput);
+
+                    throw new InvalidOperationException("Process exit with " + process.ExitCode);
+                }
+
+                return JsonConvert.DeserializeObject<AzAccessToken[]>(File.ReadAllText(accessTokensFile));
+            }
+            finally
+            {
+                if (backupContent != null)
+                {
+                    File.WriteAllText(accessTokensFile, backupContent);
+                }
+                else
+                {
+                    File.Delete(accessTokensFile);
+                }
+            }
         }
 
         public async Task<TokenCacheInfo> GetToken(string id)
@@ -264,7 +435,7 @@ namespace ARMClient.Authentication.AADAuthentication
 
             AuthenticationResult result = await context.AcquireTokenByRefreshTokenAsync(
                     refreshToken: cacheInfo.RefreshToken,
-                    clientId: Constants.AADClientId,
+                    clientId: !string.IsNullOrEmpty(cacheInfo.ClientId) ? cacheInfo.ClientId : Constants.AADClientId,
                     resource: cacheInfo.Resource);
 
             var ret = new TokenCacheInfo(cacheInfo.Resource, result);

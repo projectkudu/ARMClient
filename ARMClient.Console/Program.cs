@@ -40,6 +40,14 @@ namespace ARMClient
                         persistentAuthHelper.AcquireTokens().Wait();
                         return 0;
                     }
+                    else if (String.Equals(verb, "azlogin", StringComparison.OrdinalIgnoreCase))
+                    {
+                        _parameters.ThrowIfUnknown();
+
+                        persistentAuthHelper.AzureEnvironments = AzureEnvironments.Prod;
+                        persistentAuthHelper.AzLogin().Wait();
+                        return 0;
+                    }
                     else if (String.Equals(verb, "listcache", StringComparison.OrdinalIgnoreCase))
                     {
                         _parameters.ThrowIfUnknown();
@@ -296,6 +304,10 @@ namespace ARMClient
             Console.WriteLine();
             Console.WriteLine("Login and get tokens");
             Console.WriteLine("    ARMClient.exe login [environment name]");
+
+            Console.WriteLine();
+            Console.WriteLine("CLI az login");
+            Console.WriteLine("    ARMClient.exe azlogin");
 
             Console.WriteLine();
             Console.WriteLine("Call ARM api");

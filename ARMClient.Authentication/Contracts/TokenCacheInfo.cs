@@ -35,6 +35,7 @@ namespace ARMClient.Authentication.Contracts
         public string RefreshToken { get; set; }
         public string Resource { get; set; }
         public string TenantId { get; set; }
+        public string ClientId { get; set; }
 
         public string CreateAuthorizationHeader()
         {

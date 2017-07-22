@@ -87,6 +87,22 @@ namespace ARMClient
                     Console.ForegroundColor = originalColor;
                 }
 
+                foreach (var header in response.Content.Headers)
+                {
+                    originalColor = Console.ForegroundColor;
+                    try
+                    {
+                        Console.ForegroundColor = headerNameColor;
+                        Console.Write("{0}: ", header.Key);
+                        Console.ForegroundColor = headerValueColor;
+                        Console.WriteLine(String.Join("; ", header.Value));
+                    }
+                    finally
+                    {
+                        Console.ForegroundColor = originalColor;
+                    }
+                }
+
                 foreach (var header in response.Headers)
                 {
                     originalColor = Console.ForegroundColor;
@@ -125,15 +141,22 @@ namespace ARMClient
             var result = await content.ReadAsStringAsync();
             if (content.Headers.ContentType.MediaType.Contains(Constants.JsonContentType))
             {
-                if (result.StartsWith("["))
+                try
                 {
-                    Program.PrintColoredJson(JArray.Parse(result));
-                    return;
+                    if (result.StartsWith("["))
+                    {
+                        Program.PrintColoredJson(JArray.Parse(result));
+                        return;
+                    }
+                    else if (result.StartsWith("{"))
+                    {
+                        Program.PrintColoredJson(JObject.Parse(result));
+                        return;
+                    }
                 }
-                else if (result.StartsWith("{"))
+                catch (Exception)
                 {
-                    Program.PrintColoredJson(JObject.Parse(result));
-                    return;
+                    // best effort
                 }
             }
 
