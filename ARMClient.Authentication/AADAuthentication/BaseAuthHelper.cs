@@ -441,6 +441,7 @@ namespace ARMClient.Authentication.AADAuthentication
             var ret = new TokenCacheInfo(cacheInfo.Resource, result);
             ret.TenantId = cacheInfo.TenantId;
             ret.DisplayableId = cacheInfo.DisplayableId;
+            ret.ClientId = cacheInfo.ClientId;
             tokenCache.Add(ret);
             return ret;
         }
