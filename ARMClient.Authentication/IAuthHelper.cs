@@ -10,7 +10,7 @@ namespace ARMClient.Authentication
         AzureEnvironments AzureEnvironments { get; set; }
         Task AcquireTokens();
         Task AzLogin();
-        Task<TokenCacheInfo> GetToken(string id);
+        Task<TokenCacheInfo> GetToken(string id, string resource);
         Task<TokenCacheInfo> GetTokenBySpn(string tenantId, string appId, string appKey);
         Task<TokenCacheInfo> GetTokenByUpn(string username, string password);
         bool IsCacheValid();

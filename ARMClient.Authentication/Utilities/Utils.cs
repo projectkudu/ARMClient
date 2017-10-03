@@ -288,5 +288,11 @@ namespace ARMClient.Authentication.Utilities
             var host = uri.Host;
             return Constants.CSMUrls.Any(url => url.IndexOf(host, StringComparison.OrdinalIgnoreCase) > 0);
         }
+
+        public static bool IsKeyVault(Uri uri)
+        {
+            var host = uri.Host;
+            return host.EndsWith(".vault.azure.net", StringComparison.OrdinalIgnoreCase);
+        }
     }
 }

@@ -90,7 +90,8 @@ namespace ARMClient
                         var uri = EnsureAbsoluteUri(path, persistentAuthHelper);
 
                         var subscriptionId = GetTenantOrSubscription(uri);
-                        TokenCacheInfo cacheInfo = persistentAuthHelper.GetToken(subscriptionId).Result;
+                        var resource = GetResource(uri);
+                        TokenCacheInfo cacheInfo = persistentAuthHelper.GetToken(subscriptionId, resource).Result;
                         return HttpInvoke(uri, cacheInfo, "get", Utils.GetDefaultVerbose(), null, headers).Result;
                     }
                     else if (String.Equals(verb, "get-tenant", StringComparison.OrdinalIgnoreCase))
@@ -103,7 +104,8 @@ namespace ARMClient
                         var uri = EnsureAbsoluteUri(path, persistentAuthHelper);
 
                         var subscriptionId = GetTenantOrSubscription(uri);
-                        TokenCacheInfo cacheInfo = persistentAuthHelper.GetToken(subscriptionId).Result;
+                        var resource = GetResource(uri);
+                        TokenCacheInfo cacheInfo = persistentAuthHelper.GetToken(subscriptionId, resource).Result;
                         return HttpInvoke(uri, cacheInfo, "get", Utils.GetDefaultVerbose(), null, headers).Result;
                     }
                     else if (String.Equals(verb, "get-apps", StringComparison.OrdinalIgnoreCase))
@@ -116,7 +118,8 @@ namespace ARMClient
                         var uri = EnsureAbsoluteUri(path, persistentAuthHelper);
 
                         var subscriptionId = GetTenantOrSubscription(uri);
-                        TokenCacheInfo cacheInfo = persistentAuthHelper.GetToken(subscriptionId).Result;
+                        var resource = GetResource(uri);
+                        TokenCacheInfo cacheInfo = persistentAuthHelper.GetToken(subscriptionId, resource).Result;
                         return HttpInvoke(uri, cacheInfo, "get", Utils.GetDefaultVerbose(), null, headers).Result;
                     }
                     // https://azure.microsoft.com/en-us/documentation/articles/resource-group-authenticate-service-principal/
@@ -137,7 +140,8 @@ namespace ARMClient
                         var uri = EnsureAbsoluteUri(path, persistentAuthHelper);
 
                         var subscriptionId = GetTenantOrSubscription(uri);
-                        TokenCacheInfo cacheInfo = persistentAuthHelper.GetToken(subscriptionId).Result;
+                        var resource = GetResource(uri);
+                        TokenCacheInfo cacheInfo = persistentAuthHelper.GetToken(subscriptionId, resource).Result;
                         return HttpInvoke(uri, cacheInfo, "get", Utils.GetDefaultVerbose(), null, headers).Result;
                     }
                     else if (String.Equals(verb, "get-app", StringComparison.OrdinalIgnoreCase))
@@ -154,9 +158,9 @@ namespace ARMClient
                             : String.Format("/{0}/applications?$filter=displayName eq '{1}'&api-version=1.6", tenant, app);
 
                         var uri = EnsureAbsoluteUri(path, persistentAuthHelper);
-
+                        var resource = GetResource(uri);
                         var subscriptionId = GetTenantOrSubscription(uri);
-                        TokenCacheInfo cacheInfo = persistentAuthHelper.GetToken(subscriptionId).Result;
+                        TokenCacheInfo cacheInfo = persistentAuthHelper.GetToken(subscriptionId, resource).Result;
                         return HttpInvoke(uri, cacheInfo, "get", Utils.GetDefaultVerbose(), null, headers).Result;
                     }
                     // https://msdn.microsoft.com/library/azure/ad/graph/api/entity-and-complex-type-reference#serviceprincipalentity
@@ -173,7 +177,8 @@ namespace ARMClient
                         var uri = EnsureAbsoluteUri(path, persistentAuthHelper);
 
                         var subscriptionId = GetTenantOrSubscription(uri);
-                        TokenCacheInfo cacheInfo = persistentAuthHelper.GetToken(subscriptionId).Result;
+                        var resource = GetResource(uri);
+                        TokenCacheInfo cacheInfo = persistentAuthHelper.GetToken(subscriptionId, resource).Result;
                         return HttpInvoke(uri, cacheInfo, "get", Utils.GetDefaultVerbose(), null, headers).Result;
                     }
                     else if (String.Equals(verb, "add-cred", StringComparison.OrdinalIgnoreCase))
@@ -223,7 +228,8 @@ namespace ARMClient
                         var uri = EnsureAbsoluteUri(path, persistentAuthHelper);
 
                         var subscriptionId = GetTenantOrSubscription(uri);
-                        TokenCacheInfo cacheInfo = persistentAuthHelper.GetToken(subscriptionId).Result;
+                        var resource = GetResource(uri);
+                        TokenCacheInfo cacheInfo = persistentAuthHelper.GetToken(subscriptionId, resource).Result;
 
                         return HttpInvoke(uri, cacheInfo, "patch", Utils.GetDefaultVerbose(), content, headers).Result;
                     }
@@ -245,7 +251,8 @@ namespace ARMClient
                         var uri = EnsureAbsoluteUri(path, persistentAuthHelper);
 
                         var subscriptionId = GetTenantOrSubscription(uri);
-                        TokenCacheInfo cacheInfo = persistentAuthHelper.GetToken(subscriptionId).Result;
+                        var resource = GetResource(uri);
+                        TokenCacheInfo cacheInfo = persistentAuthHelper.GetToken(subscriptionId, resource).Result;
 
                         return HttpInvoke(uri, cacheInfo, "patch", Utils.GetDefaultVerbose(), content, headers).Result;
                     }
@@ -259,7 +266,8 @@ namespace ARMClient
                         var uri = EnsureAbsoluteUri(path, persistentAuthHelper);
 
                         var subscriptionId = GetTenantOrSubscription(uri);
-                        TokenCacheInfo cacheInfo = persistentAuthHelper.GetToken(subscriptionId).Result;
+                        var resource = GetResource(uri);
+                        TokenCacheInfo cacheInfo = persistentAuthHelper.GetToken(subscriptionId, resource).Result;
                         return HttpInvoke(uri, cacheInfo, "get", Utils.GetDefaultVerbose(), null, headers).Result;
                     }
                     else if (String.Equals(verb, "get-user", StringComparison.OrdinalIgnoreCase))
@@ -277,7 +285,8 @@ namespace ARMClient
                         var uri = EnsureAbsoluteUri(path, persistentAuthHelper);
 
                         var subscriptionId = GetTenantOrSubscription(uri);
-                        TokenCacheInfo cacheInfo = persistentAuthHelper.GetToken(subscriptionId).Result;
+                        var resource = GetResource(uri);
+                        TokenCacheInfo cacheInfo = persistentAuthHelper.GetToken(subscriptionId, resource).Result;
                         return HttpInvoke(uri, cacheInfo, "get", Utils.GetDefaultVerbose(), null, headers).Result;
                     }
                     else if (String.Equals(verb, "get-groups", StringComparison.OrdinalIgnoreCase))
@@ -292,7 +301,8 @@ namespace ARMClient
                         var uri = EnsureAbsoluteUri(path, persistentAuthHelper);
 
                         var subscriptionId = GetTenantOrSubscription(uri);
-                        TokenCacheInfo cacheInfo = persistentAuthHelper.GetToken(subscriptionId).Result;
+                        var resource = GetResource(uri);
+                        TokenCacheInfo cacheInfo = persistentAuthHelper.GetToken(subscriptionId, resource).Result;
                         var content = new StringContent("{\"securityEnabledOnly\": false}", Encoding.UTF8, "application/json");
                         return HttpInvoke(uri, cacheInfo, "post", Utils.GetDefaultVerbose(), content, headers).Result;
                     }
@@ -323,7 +333,8 @@ namespace ARMClient
             var uri = EnsureAbsoluteUri(path, persistentAuthHelper);
 
             var subscriptionId = GetTenantOrSubscription(uri);
-            TokenCacheInfo cacheInfo = persistentAuthHelper.GetToken(subscriptionId).Result;
+            var resource = GetResource(uri);
+            TokenCacheInfo cacheInfo = persistentAuthHelper.GetToken(subscriptionId, resource).Result;
 
             var json = await Utils.HttpGet(uri, cacheInfo);
             var apps = json.Value<JArray>("value");
@@ -751,6 +762,28 @@ namespace ARMClient
             }
 
             return AzureEnvironments.Prod;
+        }
+
+        static string GetResource(Uri uri, AzureEnvironments env = AzureEnvironments.Prod)
+        {
+            try
+            {
+                if (Utils.IsGraphApi(uri))
+                {
+                    return Constants.AADGraphUrls[(int)env];
+                }
+
+                if (Utils.IsKeyVault(uri))
+                {
+                    return Constants.KeyVaultResources[(int)env];
+                }
+
+                return Constants.CSMResources[(int)env];
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException(String.Format("Invalid url {0}!", uri), ex);
+            }
         }
     }
 }

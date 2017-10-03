@@ -61,6 +61,17 @@ namespace ARMClient.Authentication
             "https://notsupport.com/"
         };
 
+        public static string[] KeyVaultResources = new[]
+        {
+            "https://vault.azure.net",
+            "https://vault.azure.net",
+            "https://vault.azure.net",
+            "https://vault.azure.net",
+            "https://vault.azure.net",
+            "https://vault.azure.net",
+            "https://vault.azure.net"
+        };
+
         public static string[] SCMSuffixes = new[]
         {
             ".scm.chinacloudsites.cn",

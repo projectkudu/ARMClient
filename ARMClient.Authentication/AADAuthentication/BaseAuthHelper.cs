@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
@@ -128,6 +129,31 @@ namespace ARMClient.Authentication.AADAuthentication
             this.TenantStorage.SaveCache(tenantCache);
         }
 
+        public async Task<TokenCacheInfo> GetTokenByResource(string resource)
+        {
+            var cacheInfo = await GetRecentToken(resource);
+            if (cacheInfo != null)
+            {
+                return cacheInfo;
+            }
+
+            cacheInfo = await GetToken(null, null);
+            var tokenCache = TokenStorage.GetCache();
+            TokenCacheInfo found;
+            if (tokenCache.TryGetValue(cacheInfo.TenantId, resource, out found))
+            {
+                cacheInfo = found;
+            }
+            else
+            {
+                cacheInfo = await GetAuthorizationResult(tokenCache, tenantId: cacheInfo.TenantId, user: cacheInfo.DisplayableId, resource: resource);
+                this.TokenStorage.SaveCache(tokenCache);
+            }
+
+            this.TokenStorage.SaveRecentToken(cacheInfo, resource);
+            return cacheInfo;
+        }
+
         private AzAccessToken[] GetAzLoginTokens()
         {
             var azCmd = Environment.ExpandEnvironmentVariables(@"%ProgramFiles(x86)%\Microsoft SDKs\Azure\CLI2\wbin\az.cmd");
@@ -220,11 +246,11 @@ namespace ARMClient.Authentication.AADAuthentication
             }
         }
 
-        public async Task<TokenCacheInfo> GetToken(string id)
+        public async Task<TokenCacheInfo> GetToken(string id, string resource)
         {
             try
             {
-                return await GetTokenInternal(id);
+                return await GetTokenInternal(id, resource);
             }
             catch (AdalServiceException ex)
             {
@@ -236,14 +262,14 @@ namespace ARMClient.Authentication.AADAuthentication
 
             await AcquireTokens();
 
-            return await GetTokenInternal(id);
+            return await GetTokenInternal(id, resource);
         }
 
-        private async Task<TokenCacheInfo> GetTokenInternal(string id)
+        private async Task<TokenCacheInfo> GetTokenInternal(string id, string resource)
         {
             if (String.IsNullOrEmpty(id))
             {
-                return await GetRecentToken(Constants.CSMResources[(int)AzureEnvironments]);
+                return await GetRecentToken(resource ?? Constants.CSMResources[(int)AzureEnvironments]);
             }
 
             string tenantId = null;
@@ -266,12 +292,22 @@ namespace ARMClient.Authentication.AADAuthentication
                 }
             }
 
+            // look up tenant by assuming it is subscription
+            if (String.IsNullOrEmpty(tenantId))
+            {
+                tenantId = await GetTenantIdFromSubscription(id, throwIfNotFound: true);
+            }
+
             if (String.IsNullOrEmpty(tenantId))
             {
                 return await GetRecentToken(Constants.CSMResources[(int)AzureEnvironments]);
             }
 
-            var resource = id == tenantId ? Constants.AADGraphUrls[(int)AzureEnvironments] : Constants.CSMResources[(int)AzureEnvironments];
+            if (string.IsNullOrEmpty(resource))
+            {
+                resource = id == tenantId ? Constants.AADGraphUrls[(int)AzureEnvironments] : Constants.CSMResources[(int)AzureEnvironments];
+            }
+
             var tokenCache = this.TokenStorage.GetCache();
             TokenCacheInfo cacheInfo;
             if (!tokenCache.TryGetValue(tenantId, resource, out cacheInfo))
@@ -298,6 +334,43 @@ namespace ARMClient.Authentication.AADAuthentication
             }
 
             return cacheInfo;
+        }
+
+        private async Task<string> GetTenantIdFromSubscription(string subscriptionId, bool throwIfNotFound = true)
+        {
+            using (var client = new HttpClient())
+            {
+                var serviceUrl = ARMClient.Authentication.Constants.CSMUrls[(int)AzureEnvironments];
+                string requestUri = String.Format("{0}/subscriptions/{1}?api-version=2014-04-01", serviceUrl.Trim('/'), subscriptionId);
+                using (var response = await client.GetAsync(requestUri))
+                {
+                    if (response.StatusCode != HttpStatusCode.Unauthorized)
+                    {
+                        if (!throwIfNotFound && response.StatusCode == HttpStatusCode.NotFound)
+                        {
+                            return null;
+                        }
+
+                        throw new InvalidOperationException(String.Format("Expected Status {0} != {1} GET {2}", HttpStatusCode.Unauthorized, response.StatusCode, requestUri));
+                    }
+
+                    var header = response.Headers.WwwAuthenticate.SingleOrDefault();
+                    if (header == null || String.IsNullOrEmpty(header.Parameter))
+                    {
+                        throw new InvalidOperationException(String.Format("Missing WWW-Authenticate response header GET {0}", requestUri));
+                    }
+
+                    // WWW-Authenticate: Bearer authorization_uri="https://login.windows.net/<tenantid>", error="invalid_token", error_description="The access token is missing or invalid."
+                    var index = header.Parameter.IndexOf("authorization_uri=", StringComparison.OrdinalIgnoreCase);
+                    if (index < 0)
+                    {
+                        throw new InvalidOperationException(String.Format("Invalid WWW-Authenticat response header {0} GET {1}", header.Parameter, requestUri));
+                    }
+
+                    var parts = header.Parameter.Substring(index).Split(new[] { '\"', '=' }, StringSplitOptions.RemoveEmptyEntries);
+                    return new Uri(parts[1]).AbsolutePath.Trim('/');
+                }
+            }
         }
 
         public async Task<TokenCacheInfo> GetTokenBySpn(string tenantId, string appId, string appKey)
@@ -473,12 +546,29 @@ namespace ARMClient.Authentication.AADAuthentication
                     AuthenticationResult result = null;
                     if (!string.IsNullOrEmpty(user))
                     {
-                        result = context.AcquireToken(
-                            resource: resource,
-                            clientId: Constants.AADClientId,
-                            redirectUri: new Uri(Constants.AADRedirectUri),
-                            promptBehavior: PromptBehavior.Never,
-                            userId: new UserIdentifier(user, UserIdentifierType.OptionalDisplayableId));
+                        try
+                        {
+                            result = context.AcquireToken(
+                                resource: resource,
+                                clientId: Constants.AADClientId,
+                                redirectUri: new Uri(Constants.AADRedirectUri),
+                                promptBehavior: PromptBehavior.Never,
+                                userId: new UserIdentifier(user, UserIdentifierType.OptionalDisplayableId));
+                        }
+                        catch (AdalException adalEx)
+                        {
+                            if (adalEx.Message.IndexOf("user_interaction_required") < 0)
+                            {
+                                throw;
+                            }
+
+                            result = context.AcquireToken(
+                                resource: resource,
+                                clientId: Constants.AADClientId,
+                                redirectUri: new Uri(Constants.AADRedirectUri),
+                                promptBehavior: PromptBehavior.Auto,
+                                userId: new UserIdentifier(user, UserIdentifierType.OptionalDisplayableId));
+                        }
                     }
                     else
                     {

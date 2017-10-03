@@ -91,7 +91,20 @@ namespace ARMClient
 
                         persistentAuthHelper.AzureEnvironments = Utils.GetDefaultEnv();
 
-                        TokenCacheInfo cacheInfo = persistentAuthHelper.GetToken(tenantId).Result;
+                        TokenCacheInfo cacheInfo;
+                        Uri resourceUri = null;
+                        if (Uri.TryCreate(tenantId, UriKind.Absolute, out resourceUri))
+                        {
+                            // https://vault.azure.net (no trailing /)
+                            // https://graph.windows.net (no trailing /)
+                            // https://management.core.windows.net/
+                            cacheInfo = persistentAuthHelper.GetTokenByResource(tenantId).Result;
+                        }
+                        else
+                        {
+                            cacheInfo = persistentAuthHelper.GetToken(tenantId, null).Result;
+                        }
+
                         var bearer = cacheInfo.CreateAuthorizationHeader();
                         Clipboard.SetText(cacheInfo.AccessToken);
                         DumpClaims(cacheInfo.AccessToken);
@@ -183,8 +196,9 @@ namespace ARMClient
                             persistentAuthHelper.AcquireTokens().Wait();
                         }
 
+                        var resource = GetResource(uri, env);
                         var subscriptionId = GetTenantOrSubscription(uri);
-                        TokenCacheInfo cacheInfo = persistentAuthHelper.GetToken(subscriptionId).Result;
+                        TokenCacheInfo cacheInfo = persistentAuthHelper.GetToken(subscriptionId, resource).Result;
                         return HttpInvoke(uri, cacheInfo, verb, verbose, content, headers).Result;
                     }
                     else
@@ -316,7 +330,7 @@ namespace ARMClient
 
             Console.WriteLine();
             Console.WriteLine("Copy token to clipboard");
-            Console.WriteLine("    ARMClient.exe token [tenant|subscription]");
+            Console.WriteLine("    ARMClient.exe token [tenant|subscription|resource]");
 
             Console.WriteLine();
             Console.WriteLine("Get token by ServicePrincipal");
@@ -444,7 +458,36 @@ namespace ARMClient
                     return subscription.ToString();
                 }
 
+                Guid unused;
+                var loginTenant = Utils.GetLoginTenant();
+                if (Guid.TryParse(loginTenant, out unused))
+                {
+                    return loginTenant;
+                }
+
                 return null;
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException(String.Format("Invalid url {0}!", uri), ex);
+            }
+        }
+
+        static string GetResource(Uri uri, AzureEnvironments env)
+        {
+            try
+            {
+                if (Utils.IsGraphApi(uri))
+                {
+                    return Constants.AADGraphUrls[(int)env];
+                }
+
+                if (Utils.IsKeyVault(uri))
+                {
+                    return Constants.KeyVaultResources[(int)env];
+                }
+
+                return Constants.CSMResources[(int)env];
             }
             catch (Exception ex)
             {
@@ -515,6 +558,11 @@ namespace ARMClient
                 {
                     return (AzureEnvironments)i;
                 }
+            }
+
+            if (Utils.IsKeyVault(uri))
+            {
+                return AzureEnvironments.Prod;
             }
 
             return AzureEnvironments.Prod;
