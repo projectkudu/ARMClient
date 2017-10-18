@@ -25,6 +25,8 @@ Check out [wiki](https://github.com/projectkudu/ARMClient/wiki) for more details
     Clear token cache
         ARMClient.exe clearcache
 
+Note: Valid values for optional `[environment name]`: (Default) `Prod` for Azure Global, `Fairfax` for Azure Government, `Blackforest` for Azure Germany, `Mooncake` for Azure China.
+
 Note: The tokens are cached at `%USERPROFILE%\.arm` folder.  All files are encrypted with CurrentUser ProtectData .NET api. 
 
 Note: PowerShell users will need to escape the `@` symbol with a back tick <code>`</code>.
