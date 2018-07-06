@@ -12,6 +12,9 @@ Check out [wiki](https://github.com/projectkudu/ARMClient/wiki) for more details
     Login and get tokens
         ARMClient.exe login [environment name]
     
+    Login with Azure CLI 2.0 (az -- https://github.com/Azure/azure-cli)
+        ARMClient.exe azlogin
+    
     Call ARM api
         ARMClient.exe [get|post|put|patch|delete] [url] (<@file|content>) (-h "header: value") (-verbose)
         Use '-h' multiple times to add more than one custom HTTP header.

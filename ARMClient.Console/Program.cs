@@ -320,7 +320,7 @@ namespace ARMClient
             Console.WriteLine("    ARMClient.exe login [environment name]");
 
             Console.WriteLine();
-            Console.WriteLine("CLI az login");
+            Console.WriteLine("Login with Azure CLI 2.0 (az)");
             Console.WriteLine("    ARMClient.exe azlogin");
 
             Console.WriteLine();
