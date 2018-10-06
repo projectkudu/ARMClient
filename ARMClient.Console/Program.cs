@@ -373,6 +373,10 @@ namespace ARMClient
                 {
                     data = File.ReadAllText(data.Substring(1));
                 }
+                else if (File.Exists(data))
+                {
+                    data = File.ReadAllText(data);
+                }
 
                 return new StringContent(data, Encoding.UTF8, Constants.JsonContentType);
             }

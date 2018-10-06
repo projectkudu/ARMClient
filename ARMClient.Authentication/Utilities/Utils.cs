@@ -124,7 +124,9 @@ namespace ARMClient.Authentication.Utilities
                     }
                 }
 
-                client.DefaultRequestHeaders.Add("x-ms-request-id", Guid.NewGuid().ToString(), headers);
+                var requestId = Guid.NewGuid().ToString();
+                client.DefaultRequestHeaders.Add("x-ms-request-id", requestId);
+                client.DefaultRequestHeaders.Add("x-ms-correlation-request-id", requestId);
 
                 client.DefaultRequestHeaders.AddRemainingHeaders(headers);
 
