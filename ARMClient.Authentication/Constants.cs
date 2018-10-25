@@ -118,5 +118,6 @@ namespace ARMClient.Authentication
         public const string CSMApiVersion = "2014-01-01";
         public const string AADGraphApiVersion = "1.5";
         public const string JsonContentType = "application/json";
+        public const string XmlContentType = "text/xml";
     }
 }

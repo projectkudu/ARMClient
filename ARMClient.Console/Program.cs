@@ -378,7 +378,7 @@ namespace ARMClient
                     data = File.ReadAllText(data);
                 }
 
-                return new StringContent(data, Encoding.UTF8, Constants.JsonContentType);
+                return new StringContent(data, Encoding.UTF8, !string.IsNullOrEmpty(data) && data.StartsWith("<") ? Constants.XmlContentType : Constants.JsonContentType);
             }
             return null;
         }
@@ -434,6 +434,149 @@ namespace ARMClient
                         Console.Write(value);
                     }
                 }
+            }
+            finally
+            {
+                Console.ForegroundColor = originalColor;
+            }
+        }
+
+        public static void PrintColoredXml(string str)
+        {
+            ConsoleColor HC_NODE = ConsoleColor.DarkGreen;
+            ConsoleColor HC_STRING = ConsoleColor.Blue;
+            ConsoleColor HC_ATTRIBUTE = ConsoleColor.Red;
+            ConsoleColor HC_COMMENT = ConsoleColor.DarkGray;
+            ConsoleColor HC_INNERTEXT = ConsoleColor.DarkYellow;
+
+            int cur = 0;
+            int k = 0;
+
+            int st, en;
+            int lasten = -1;
+            while (k < str.Length)
+            {
+                st = str.IndexOf('<', k);
+
+                if (st < 0)
+                    break;
+
+                if (lasten > 0)
+                {
+                    PrintColor(HC_INNERTEXT, str, lasten + 1, st - lasten - 1, ref cur);
+                }
+
+                en = str.IndexOf('>', st + 1);
+                if (en < 0)
+                    break;
+
+                k = en + 1;
+                lasten = en;
+
+                if (str[st + 1] == '!' && str[st + 2] == '-' && str[st + 3] == '-')
+                {
+                    k = str.IndexOf("-->", st + 3) + 2;
+                    PrintColor(HC_COMMENT, str, st + 1, k - st - 1, ref cur);
+                    PrintColor(HC_NODE, str, k, 1, ref cur);
+                    ++k;
+                    lasten = k - 1;
+                    continue;
+
+                }
+                String nodeText = str.Substring(st + 1, en - st - 1);
+
+
+                bool inString = false;
+
+                int lastSt = -1;
+                int state = 0;
+                /* 0 = before node name
+                 * 1 = in node name
+                   2 = after node name
+                   3 = in attribute
+                   4 = in string
+                   */
+                int startNodeName = 0, startAtt = 0;
+                for (int i = 0; i < nodeText.Length; ++i)
+                {
+                    if (nodeText[i] == '"')
+                        inString = !inString;
+
+                    if (inString && nodeText[i] == '"')
+                        lastSt = i;
+                    else
+                        if (nodeText[i] == '"')
+                    {
+                        PrintColor(HC_STRING, str, lastSt + st + 2, i - lastSt - 1, ref cur);
+                    }
+
+                    switch (state)
+                    {
+                        case 0:
+                            if (!Char.IsWhiteSpace(nodeText, i))
+                            {
+                                startNodeName = i;
+                                state = 1;
+                            }
+                            break;
+                        case 1:
+                            if (Char.IsWhiteSpace(nodeText, i))
+                            {
+                                PrintColor(HC_NODE, str, startNodeName + st, i - startNodeName + 1, ref cur);
+                                state = 2;
+                            }
+                            break;
+                        case 2:
+                            if (!Char.IsWhiteSpace(nodeText, i))
+                            {
+                                startAtt = i;
+                                state = 3;
+                            }
+                            break;
+
+                        case 3:
+                            if (Char.IsWhiteSpace(nodeText, i) || nodeText[i] == '=')
+                            {
+                                PrintColor(HC_ATTRIBUTE, str, startAtt + st, i - startAtt + 1, ref cur);
+                                state = 4;
+                            }
+                            break;
+                        case 4:
+                            if (nodeText[i] == '"' && !inString)
+                                state = 2;
+                            break;
+
+
+                    }
+
+                }
+
+                if (state == 1)
+                {
+                    PrintColor(HC_NODE, str, st + 1, nodeText.Length, ref cur);
+                }
+            }
+
+            if (cur < str.Length)
+            {
+                PrintColor(ConsoleColor.DarkGreen, str, cur, str.Length - cur, ref cur);
+            }
+        }
+
+        static void PrintColor(ConsoleColor color, string str, int begin, int lenght, ref int cur)
+        {
+            var originalColor = Console.ForegroundColor;
+            try
+            {
+                if (cur < begin)
+                {
+                    Console.ForegroundColor = ConsoleColor.DarkGreen;
+                    Console.Write(str.Substring(cur, begin - cur));
+                }
+
+                Console.ForegroundColor = color;
+                Console.Write(str.Substring(begin, lenght));
+                cur = begin + lenght;
             }
             finally
             {

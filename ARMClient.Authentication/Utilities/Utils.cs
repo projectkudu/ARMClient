@@ -126,6 +126,7 @@ namespace ARMClient.Authentication.Utilities
 
                 var requestId = Guid.NewGuid().ToString();
                 client.DefaultRequestHeaders.Add("x-ms-request-id", requestId);
+                client.DefaultRequestHeaders.Add("x-ms-client-request-id", requestId);
                 client.DefaultRequestHeaders.Add("x-ms-correlation-request-id", requestId);
 
                 client.DefaultRequestHeaders.AddRemainingHeaders(headers);
@@ -226,7 +227,10 @@ namespace ARMClient.Authentication.Utilities
                     }
                 }
 
-                client.DefaultRequestHeaders.Add("x-ms-request-id", Guid.NewGuid().ToString());
+                var requestId = Guid.NewGuid().ToString();
+                client.DefaultRequestHeaders.Add("x-ms-request-id", requestId);
+                client.DefaultRequestHeaders.Add("x-ms-client-request-id", requestId);
+                client.DefaultRequestHeaders.Add("x-ms-correlation-request-id", requestId);
 
                 using (var response = await client.GetAsync(uri))
                 {

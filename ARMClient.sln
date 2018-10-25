@@ -9,6 +9,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ARMClient.Authentication", 
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AADClient.Console", "AADClient.Console\AADClient.Console.csproj", "{7C204270-8911-4E04-B3FE-417381128D34}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RDFEClient.Console", "RDFEClient.Console\RDFEClient.Console.csproj", "{48E9A98D-6E60-4D9A-8E43-353E45E2B73F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -27,6 +29,10 @@ Global
 		{7C204270-8911-4E04-B3FE-417381128D34}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7C204270-8911-4E04-B3FE-417381128D34}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7C204270-8911-4E04-B3FE-417381128D34}.Release|Any CPU.Build.0 = Release|Any CPU
+		{48E9A98D-6E60-4D9A-8E43-353E45E2B73F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{48E9A98D-6E60-4D9A-8E43-353E45E2B73F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{48E9A98D-6E60-4D9A-8E43-353E45E2B73F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{48E9A98D-6E60-4D9A-8E43-353E45E2B73F}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

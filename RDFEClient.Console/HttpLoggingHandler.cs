@@ -2,15 +2,12 @@
 using System.Diagnostics;
 using System.Linq;
 using System.Net.Http;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Xml;
 using System.Xml.Linq;
-using ARMClient.Authentication;
 using Newtonsoft.Json.Linq;
 
-namespace ARMClient
+namespace RDFEClient
 {
     class HttpLoggingHandler : DelegatingHandler
     {
@@ -142,18 +139,18 @@ namespace ARMClient
             }
 
             var result = await content.ReadAsStringAsync();
-            if (content.Headers.ContentType.MediaType.Contains(Constants.JsonContentType))
+            if (content.Headers.ContentType.MediaType.Contains(RDFEClient.JsonContentType))
             {
                 try
                 {
                     if (result.StartsWith("["))
                     {
-                        Program.PrintColoredJson(JArray.Parse(result));
+                        RDFEClient.PrintColoredJson(JArray.Parse(result));
                         return;
                     }
                     else if (result.StartsWith("{"))
                     {
-                        Program.PrintColoredJson(JObject.Parse(result));
+                        RDFEClient.PrintColoredJson(JObject.Parse(result));
                         return;
                     }
                 }
@@ -162,12 +159,12 @@ namespace ARMClient
                     // best effort
                 }
             }
-            else if (content.Headers.ContentType.MediaType.Contains(Constants.XmlContentType) ||
+            else if (content.Headers.ContentType.MediaType.Contains(RDFEClient.XmlContentType) ||
                 content.Headers.ContentType.MediaType.Contains("application/xml"))
             {
                 try
                 {
-                    Program.PrintColoredXml(XDocument.Parse(result).ToString());
+                    RDFEClient.PrintColoredXml(XDocument.Parse(result).ToString());
                     return;
                 }
                 catch (Exception)

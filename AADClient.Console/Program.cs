@@ -26,7 +26,7 @@ namespace ARMClient
             try
             {
                 var persistentAuthHelper = new PersistentAuthHelper();
-                persistentAuthHelper.AzureEnvironments = AzureEnvironments.Prod;
+                persistentAuthHelper.AzureEnvironments = Utils.GetDefaultEnv();
                 if (args.Length > 0)
                 {
                     var _parameters = new CommandLineParameters(args);
@@ -90,7 +90,7 @@ namespace ARMClient
                         var uri = EnsureAbsoluteUri(path, persistentAuthHelper);
 
                         var subscriptionId = GetTenantOrSubscription(uri);
-                        var resource = GetResource(uri);
+                        var resource = GetResource(uri, persistentAuthHelper.AzureEnvironments);
                         TokenCacheInfo cacheInfo = persistentAuthHelper.GetToken(subscriptionId, resource).Result;
                         return HttpInvoke(uri, cacheInfo, "get", Utils.GetDefaultVerbose(), null, headers).Result;
                     }
@@ -104,7 +104,7 @@ namespace ARMClient
                         var uri = EnsureAbsoluteUri(path, persistentAuthHelper);
 
                         var subscriptionId = GetTenantOrSubscription(uri);
-                        var resource = GetResource(uri);
+                        var resource = GetResource(uri, persistentAuthHelper.AzureEnvironments);
                         TokenCacheInfo cacheInfo = persistentAuthHelper.GetToken(subscriptionId, resource).Result;
                         return HttpInvoke(uri, cacheInfo, "get", Utils.GetDefaultVerbose(), null, headers).Result;
                     }
@@ -118,7 +118,7 @@ namespace ARMClient
                         var uri = EnsureAbsoluteUri(path, persistentAuthHelper);
 
                         var subscriptionId = GetTenantOrSubscription(uri);
-                        var resource = GetResource(uri);
+                        var resource = GetResource(uri, persistentAuthHelper.AzureEnvironments);
                         TokenCacheInfo cacheInfo = persistentAuthHelper.GetToken(subscriptionId, resource).Result;
                         return HttpInvoke(uri, cacheInfo, "get", Utils.GetDefaultVerbose(), null, headers).Result;
                     }
@@ -140,7 +140,7 @@ namespace ARMClient
                         var uri = EnsureAbsoluteUri(path, persistentAuthHelper);
 
                         var subscriptionId = GetTenantOrSubscription(uri);
-                        var resource = GetResource(uri);
+                        var resource = GetResource(uri, persistentAuthHelper.AzureEnvironments);
                         TokenCacheInfo cacheInfo = persistentAuthHelper.GetToken(subscriptionId, resource).Result;
                         return HttpInvoke(uri, cacheInfo, "get", Utils.GetDefaultVerbose(), null, headers).Result;
                     }
@@ -158,7 +158,7 @@ namespace ARMClient
                             : String.Format("/{0}/applications?$filter=displayName eq '{1}'&api-version=1.6", tenant, app);
 
                         var uri = EnsureAbsoluteUri(path, persistentAuthHelper);
-                        var resource = GetResource(uri);
+                        var resource = GetResource(uri, persistentAuthHelper.AzureEnvironments);
                         var subscriptionId = GetTenantOrSubscription(uri);
                         TokenCacheInfo cacheInfo = persistentAuthHelper.GetToken(subscriptionId, resource).Result;
                         return HttpInvoke(uri, cacheInfo, "get", Utils.GetDefaultVerbose(), null, headers).Result;
@@ -177,7 +177,7 @@ namespace ARMClient
                         var uri = EnsureAbsoluteUri(path, persistentAuthHelper);
 
                         var subscriptionId = GetTenantOrSubscription(uri);
-                        var resource = GetResource(uri);
+                        var resource = GetResource(uri, persistentAuthHelper.AzureEnvironments);
                         TokenCacheInfo cacheInfo = persistentAuthHelper.GetToken(subscriptionId, resource).Result;
                         return HttpInvoke(uri, cacheInfo, "get", Utils.GetDefaultVerbose(), null, headers).Result;
                     }
@@ -228,7 +228,7 @@ namespace ARMClient
                         var uri = EnsureAbsoluteUri(path, persistentAuthHelper);
 
                         var subscriptionId = GetTenantOrSubscription(uri);
-                        var resource = GetResource(uri);
+                        var resource = GetResource(uri, persistentAuthHelper.AzureEnvironments);
                         TokenCacheInfo cacheInfo = persistentAuthHelper.GetToken(subscriptionId, resource).Result;
 
                         return HttpInvoke(uri, cacheInfo, "patch", Utils.GetDefaultVerbose(), content, headers).Result;
@@ -251,7 +251,7 @@ namespace ARMClient
                         var uri = EnsureAbsoluteUri(path, persistentAuthHelper);
 
                         var subscriptionId = GetTenantOrSubscription(uri);
-                        var resource = GetResource(uri);
+                        var resource = GetResource(uri, persistentAuthHelper.AzureEnvironments);
                         TokenCacheInfo cacheInfo = persistentAuthHelper.GetToken(subscriptionId, resource).Result;
 
                         return HttpInvoke(uri, cacheInfo, "patch", Utils.GetDefaultVerbose(), content, headers).Result;
@@ -266,7 +266,7 @@ namespace ARMClient
                         var uri = EnsureAbsoluteUri(path, persistentAuthHelper);
 
                         var subscriptionId = GetTenantOrSubscription(uri);
-                        var resource = GetResource(uri);
+                        var resource = GetResource(uri, persistentAuthHelper.AzureEnvironments);
                         TokenCacheInfo cacheInfo = persistentAuthHelper.GetToken(subscriptionId, resource).Result;
                         return HttpInvoke(uri, cacheInfo, "get", Utils.GetDefaultVerbose(), null, headers).Result;
                     }
@@ -285,25 +285,86 @@ namespace ARMClient
                         var uri = EnsureAbsoluteUri(path, persistentAuthHelper);
 
                         var subscriptionId = GetTenantOrSubscription(uri);
-                        var resource = GetResource(uri);
+                        var resource = GetResource(uri, persistentAuthHelper.AzureEnvironments);
                         TokenCacheInfo cacheInfo = persistentAuthHelper.GetToken(subscriptionId, resource).Result;
                         return HttpInvoke(uri, cacheInfo, "get", Utils.GetDefaultVerbose(), null, headers).Result;
                     }
-                    else if (String.Equals(verb, "get-groups", StringComparison.OrdinalIgnoreCase))
+                    else if (String.Equals(verb, "get-membergroups", StringComparison.OrdinalIgnoreCase))
                     {
                         var tenant = _parameters.Get(1, keyName: "tenant");
                         var user = _parameters.Get(2, keyName: "user");
                         var headers = _parameters.GetValue<Dictionary<string, List<string>>>("-h", requires: false);
                         _parameters.ThrowIfUnknown();
 
-
                         var path = String.Format("/{0}/users/{1}/getMemberGroups?api-version=1.6", tenant, user);
                         var uri = EnsureAbsoluteUri(path, persistentAuthHelper);
 
                         var subscriptionId = GetTenantOrSubscription(uri);
-                        var resource = GetResource(uri);
+                        var resource = GetResource(uri, persistentAuthHelper.AzureEnvironments);
                         TokenCacheInfo cacheInfo = persistentAuthHelper.GetToken(subscriptionId, resource).Result;
                         var content = new StringContent("{\"securityEnabledOnly\": false}", Encoding.UTF8, "application/json");
+                        return HttpInvoke(uri, cacheInfo, "post", Utils.GetDefaultVerbose(), content, headers).Result;
+                    }
+                    else if (String.Equals(verb, "get-groups", StringComparison.OrdinalIgnoreCase))
+                    {
+                        var tenant = _parameters.Get(1, keyName: "tenant");
+                        var headers = _parameters.GetValue<Dictionary<string, List<string>>>("-h", requires: false);
+                        _parameters.ThrowIfUnknown();
+
+                        var path = String.Format("/{0}/groups?api-version=1.6", tenant);
+                        var uri = EnsureAbsoluteUri(path, persistentAuthHelper);
+
+                        var subscriptionId = GetTenantOrSubscription(uri);
+                        var resource = GetResource(uri, persistentAuthHelper.AzureEnvironments);
+                        TokenCacheInfo cacheInfo = persistentAuthHelper.GetToken(subscriptionId, resource).Result;
+                        return HttpInvoke(uri, cacheInfo, "get", Utils.GetDefaultVerbose(), null, headers).Result;
+                    }
+                    else if (String.Equals(verb, "get-group", StringComparison.OrdinalIgnoreCase))
+                    {
+                        var tenant = _parameters.Get(1, keyName: "tenant");
+                        var oid = _parameters.Get(2, keyName: "oid");
+                        var headers = _parameters.GetValue<Dictionary<string, List<string>>>("-h", requires: false);
+                        _parameters.ThrowIfUnknown();
+
+                        var path = String.Format("/{0}/groups/{1}?api-version=1.6", tenant, oid);
+                        var uri = EnsureAbsoluteUri(path, persistentAuthHelper);
+
+                        var subscriptionId = GetTenantOrSubscription(uri);
+                        var resource = GetResource(uri, persistentAuthHelper.AzureEnvironments);
+                        TokenCacheInfo cacheInfo = persistentAuthHelper.GetToken(subscriptionId, resource).Result;
+                        return HttpInvoke(uri, cacheInfo, "get", Utils.GetDefaultVerbose(), null, headers).Result;
+                    }
+                    else if (String.Equals(verb, "get-groupmembers", StringComparison.OrdinalIgnoreCase))
+                    {
+                        var tenant = _parameters.Get(1, keyName: "tenant");
+                        var oid = _parameters.Get(2, keyName: "oid");
+                        var headers = _parameters.GetValue<Dictionary<string, List<string>>>("-h", requires: false);
+                        _parameters.ThrowIfUnknown();
+
+                        var path = String.Format("/{0}/groups/{1}/$links/members?api-version=1.6", tenant, oid);
+                        var uri = EnsureAbsoluteUri(path, persistentAuthHelper);
+
+                        var subscriptionId = GetTenantOrSubscription(uri);
+                        var resource = GetResource(uri, persistentAuthHelper.AzureEnvironments);
+                        TokenCacheInfo cacheInfo = persistentAuthHelper.GetToken(subscriptionId, resource).Result;
+                        return HttpInvoke(uri, cacheInfo, "get", Utils.GetDefaultVerbose(), null, headers).Result;
+                    }
+                    else if (String.Equals(verb, "add-groupmember", StringComparison.OrdinalIgnoreCase))
+                    {
+                        var tenant = _parameters.Get(1, keyName: "tenant");
+                        var oid = _parameters.Get(2, keyName: "oid");
+                        var user = _parameters.Get(3, keyName: "user");
+                        var headers = _parameters.GetValue<Dictionary<string, List<string>>>("-h", requires: false);
+                        _parameters.ThrowIfUnknown();
+
+                        var path = String.Format("/{0}/groups/{1}/$links/members?api-version=1.6", tenant, oid);
+                        var uri = EnsureAbsoluteUri(path, persistentAuthHelper);
+                        var userUri = new Uri(uri, string.Format("/{0}/directoryObjects/{1}", tenant, user));
+
+                        var subscriptionId = GetTenantOrSubscription(uri);
+                        var resource = GetResource(uri, persistentAuthHelper.AzureEnvironments);
+                        TokenCacheInfo cacheInfo = persistentAuthHelper.GetToken(subscriptionId, resource).Result;
+                        var content = new StringContent("{\"url\": \"" + userUri + "\"}", Encoding.UTF8, "application/json");
                         return HttpInvoke(uri, cacheInfo, "post", Utils.GetDefaultVerbose(), content, headers).Result;
                     }
                     else
@@ -333,7 +394,7 @@ namespace ARMClient
             var uri = EnsureAbsoluteUri(path, persistentAuthHelper);
 
             var subscriptionId = GetTenantOrSubscription(uri);
-            var resource = GetResource(uri);
+            var resource = GetResource(uri, persistentAuthHelper.AzureEnvironments);
             TokenCacheInfo cacheInfo = persistentAuthHelper.GetToken(subscriptionId, resource).Result;
 
             var json = await Utils.HttpGet(uri, cacheInfo);
@@ -660,6 +721,149 @@ namespace ARMClient
                         Console.Write(value);
                     }
                 }
+            }
+            finally
+            {
+                Console.ForegroundColor = originalColor;
+            }
+        }
+
+        public static void PrintColoredXml(string str)
+        {
+            ConsoleColor HC_NODE = ConsoleColor.DarkGreen;
+            ConsoleColor HC_STRING = ConsoleColor.Blue;
+            ConsoleColor HC_ATTRIBUTE = ConsoleColor.Red;
+            ConsoleColor HC_COMMENT = ConsoleColor.DarkGray;
+            ConsoleColor HC_INNERTEXT = ConsoleColor.DarkYellow;
+
+            int cur = 0;
+            int k = 0;
+
+            int st, en;
+            int lasten = -1;
+            while (k < str.Length)
+            {
+                st = str.IndexOf('<', k);
+
+                if (st < 0)
+                    break;
+
+                if (lasten > 0)
+                {
+                    PrintColor(HC_INNERTEXT, str, lasten + 1, st - lasten - 1, ref cur);
+                }
+
+                en = str.IndexOf('>', st + 1);
+                if (en < 0)
+                    break;
+
+                k = en + 1;
+                lasten = en;
+
+                if (str[st + 1] == '!' && str[st + 2] == '-' && str[st + 3] == '-')
+                {
+                    k = str.IndexOf("-->", st + 3) + 2;
+                    PrintColor(HC_COMMENT, str, st + 1, k - st - 1, ref cur);
+                    PrintColor(HC_NODE, str, k, 1, ref cur);
+                    ++k;
+                    lasten = k - 1;
+                    continue;
+
+                }
+                String nodeText = str.Substring(st + 1, en - st - 1);
+
+
+                bool inString = false;
+
+                int lastSt = -1;
+                int state = 0;
+                /* 0 = before node name
+                 * 1 = in node name
+                   2 = after node name
+                   3 = in attribute
+                   4 = in string
+                   */
+                int startNodeName = 0, startAtt = 0;
+                for (int i = 0; i < nodeText.Length; ++i)
+                {
+                    if (nodeText[i] == '"')
+                        inString = !inString;
+
+                    if (inString && nodeText[i] == '"')
+                        lastSt = i;
+                    else
+                        if (nodeText[i] == '"')
+                    {
+                        PrintColor(HC_STRING, str, lastSt + st + 2, i - lastSt - 1, ref cur);
+                    }
+
+                    switch (state)
+                    {
+                        case 0:
+                            if (!Char.IsWhiteSpace(nodeText, i))
+                            {
+                                startNodeName = i;
+                                state = 1;
+                            }
+                            break;
+                        case 1:
+                            if (Char.IsWhiteSpace(nodeText, i))
+                            {
+                                PrintColor(HC_NODE, str, startNodeName + st, i - startNodeName + 1, ref cur);
+                                state = 2;
+                            }
+                            break;
+                        case 2:
+                            if (!Char.IsWhiteSpace(nodeText, i))
+                            {
+                                startAtt = i;
+                                state = 3;
+                            }
+                            break;
+
+                        case 3:
+                            if (Char.IsWhiteSpace(nodeText, i) || nodeText[i] == '=')
+                            {
+                                PrintColor(HC_ATTRIBUTE, str, startAtt + st, i - startAtt + 1, ref cur);
+                                state = 4;
+                            }
+                            break;
+                        case 4:
+                            if (nodeText[i] == '"' && !inString)
+                                state = 2;
+                            break;
+
+
+                    }
+
+                }
+
+                if (state == 1)
+                {
+                    PrintColor(HC_NODE, str, st + 1, nodeText.Length, ref cur);
+                }
+            }
+
+            if (cur < str.Length)
+            {
+                PrintColor(ConsoleColor.DarkGreen, str, cur, str.Length - cur, ref cur);
+            }
+        }
+
+        static void PrintColor(ConsoleColor color, string str, int begin, int lenght, ref int cur)
+        {
+            var originalColor = Console.ForegroundColor;
+            try
+            {
+                if (cur < begin)
+                {
+                    Console.ForegroundColor = ConsoleColor.DarkGreen;
+                    Console.Write(str.Substring(cur, begin - cur));
+                }
+
+                Console.ForegroundColor = color;
+                Console.Write(str.Substring(begin, lenght));
+                cur = begin + lenght;
             }
             finally
             {
