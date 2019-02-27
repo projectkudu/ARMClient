@@ -159,6 +159,13 @@ namespace RDFEClient
         static string GetAuthorizationHeader(string subscriptionId)
         {
             Utils.SetTraceListener(new ConsoleTraceListener());
+
+            var accessToken = Utils.GetDefaultToken();
+            if (!String.IsNullOrEmpty(accessToken))
+            {
+                return String.Format("Bearer {0}", accessToken);
+            }
+
             var persistentAuthHelper = new PersistentAuthHelper();
             var cacheInfo = persistentAuthHelper.GetToken(subscriptionId, "https://management.core.windows.net/").Result;
             return cacheInfo.CreateAuthorizationHeader();
@@ -401,6 +408,7 @@ namespace RDFEClient
         {
             Dictionary<string, string> locationZones = new Dictionary<string, string>
             {
+                { "Australia Southeast", "" },
                 { "East US", "useast-AZ01" },
                 { "East US 2 EUAP", "useast2euap-AZ02" },
                 { "East US 2", "useast2-AZ03" },
