@@ -395,7 +395,7 @@ namespace ARMClient.Authentication.AADAuthentication
             this.TenantStorage.ClearCache();
 
             var tokenCache = new CustomTokenCache();
-            var cacheInfo = GetAuthorizationResultBySpn(tokenCache, tenantId, appId, certificate, Constants.CSMResources[(int)AzureEnvironments]);
+            var cacheInfo = await GetAuthorizationResultBySpn(tokenCache, tenantId, appId, certificate, Constants.CSMResources[(int)AzureEnvironments]);
 
             var tenantCache = await GetTokenForTenants(tokenCache, cacheInfo, appId: appId, appKey: "_certificate_");
 
@@ -618,7 +618,7 @@ namespace ARMClient.Authentication.AADAuthentication
             return cacheInfo;
         }
 
-        protected TokenCacheInfo GetAuthorizationResultBySpn(CustomTokenCache tokenCache, string tenantId, string appId, X509Certificate2 certificate, string resource)
+        protected async Task<TokenCacheInfo> GetAuthorizationResultBySpn(CustomTokenCache tokenCache, string tenantId, string appId, X509Certificate2 certificate, string resource)
         {
             TokenCacheInfo found;
             if (tokenCache.TryGetValue(tenantId, resource, out found))
@@ -626,16 +626,11 @@ namespace ARMClient.Authentication.AADAuthentication
                 return found;
             }
 
-            var azureEnvironment = this.AzureEnvironments;
-            var authority = String.Format("{0}/{1}", Constants.AADLoginUrls[(int)azureEnvironment], tenantId);
-            var context = new AuthenticationContext(
-                authority: authority,
-                validateAuthority: true,
-                tokenCache: tokenCache);
-            var credential = new ClientAssertionCertificate(appId, certificate);
-            var result = context.AcquireToken(resource, credential);
+            var helper = new JwtHelper();
+            var tokenEndpoint = string.Format("{0}/{1}/oauth2/token", Constants.AADLoginUrls[(int)this.AzureEnvironments], tenantId);
+            var token = await helper.AcquireTokenByX509(tenantId, appId, certificate, resource, tokenEndpoint);
 
-            var cacheInfo = new TokenCacheInfo(tenantId, appId, "_certificate_", resource, result);
+            var cacheInfo = new TokenCacheInfo(tenantId, appId, "_certificate_", resource, token);
             tokenCache.Add(cacheInfo);
             return cacheInfo;
         }

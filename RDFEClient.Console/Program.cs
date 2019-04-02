@@ -55,6 +55,7 @@ namespace RDFEClient
                 "  RDFEClient.exe Login",
                 "  RDFEClient.exe ListCache",
                 "  RDFEClient.exe GetDeployment subscriptionId serviceName",
+                "  RDFEClient.exe DeleteDeployment subscriptionId serviceName",
                 "  RDFEClient.exe GetConfiguration subscriptionId serviceName",
                 "  RDFEClient.exe UpdateConfiguration subscriptionId serviceName content",
                 "  RDFEClient.exe ListExtensions subscriptionId serviceName",
@@ -101,6 +102,15 @@ namespace RDFEClient
             var authHeader = GetAuthorizationHeader(subscriptionId);
             var uri = new Uri(string.Format("https://management.core.windows.net/{0}/services/hostedservices/{1}/deploymentslots/Production", subscriptionId, serviceName));
             using (var response = RDFEClient.HttpInvoke(uri, authHeader, "get").Result)
+            {
+            }
+        }
+
+        static void DeleteDeployment(string subscriptionId, string serviceName)
+        {
+            var authHeader = GetAuthorizationHeader(subscriptionId);
+            var uri = new Uri(string.Format("https://management.core.windows.net/{0}/services/hostedservices/{1}/deploymentslots/Production", subscriptionId, serviceName));
+            using (var response = RDFEClient.HttpInvoke(uri, authHeader, "delete").Result)
             {
             }
         }
@@ -406,40 +416,8 @@ namespace RDFEClient
 
         static void AddReservedIp(string subscriptionId, string reservedIpName, string location)
         {
-            Dictionary<string, string> locationZones = new Dictionary<string, string>
-            {
-                { "Australia Southeast", "" },
-                { "East US", "useast-AZ01" },
-                { "East US 2 EUAP", "useast2euap-AZ02" },
-                { "East US 2", "useast2-AZ03" },
-                //{ "East US 2 EUAP", "" },
-                //{ "North Central US", "usnorth-NONE" },
-                { "North Central US", "" }
-            };
-
-            var pair = locationZones.FirstOrDefault(p => string.Equals(p.Key, location, StringComparison.OrdinalIgnoreCase));
-            if (string.IsNullOrEmpty(pair.Key))
-            {
-                throw new InvalidOperationException("Unknown AvailabilityZone for " + location + " location!");
-            }
-
-            var payload = !string.IsNullOrEmpty(pair.Value) ? string.Format(@"
-<ReservedIP xmlns='http://schemas.microsoft.com/windowsazure'>
-  <Name>{0}</Name>
-  <Label>AppServiceReservedIp</Label>
-  <DeploymentName></DeploymentName>
-  <Location>{1}</Location>
-  <IPTags>
-    <IPTag>
-      <IPTagType>FirstPartyUsage</IPTagType>
-      <Value>/AppService</Value>
-    </IPTag>
-    <IPTag>
-      <IPTagType>AvailabilityZone</IPTagType>
-      <Value>{2}</Value>
-    </IPTag>
-  </IPTags>
-</ReservedIP>", reservedIpName, pair.Key, pair.Value) : string.Format(@"
+            // NOTE: another valid tag is /AppServiceManagement
+            var payload = string.Format(@"
 <ReservedIP xmlns='http://schemas.microsoft.com/windowsazure'>
   <Name>{0}</Name>
   <Label>AppServiceReservedIp</Label>
@@ -451,7 +429,7 @@ namespace RDFEClient
       <Value>/AppService</Value>
     </IPTag>
   </IPTags>
-</ReservedIP>", reservedIpName, pair.Key);
+</ReservedIP>", reservedIpName, location);
 
             var authHeader = GetAuthorizationHeader(subscriptionId);
             var content = new StringContent(payload, Encoding.UTF8, "text/xml");

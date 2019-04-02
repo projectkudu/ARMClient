@@ -1,4 +1,5 @@
 ﻿using System;
+using ARMClient.Authentication.Utilities;
 using Microsoft.IdentityModel.Clients.ActiveDirectory;
 
 namespace ARMClient.Authentication.Contracts
@@ -25,6 +26,17 @@ namespace ARMClient.Authentication.Contracts
             RefreshToken = result.RefreshToken;
             Resource = resource;
             TenantId = result.TenantId;
+        }
+
+        public TokenCacheInfo(string tenantId, string appId, string appKey, string resource, JwtHelper.OAuthToken token)
+        {
+            AppId = appId;
+            AppKey = appKey;
+            TenantId = tenantId;
+            Resource = resource;
+            AccessToken = token.access_token;
+            ExpiresOn = token.ExpirationTime;
+            RefreshToken = token.refresh_token;
         }
 
         public string AppId { get; set; }

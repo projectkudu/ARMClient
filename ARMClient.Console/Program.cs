@@ -131,10 +131,21 @@ namespace ARMClient
                                 var password = _parameters.Get(4, keyName: "password", requires: false);
                                 if (password == null)
                                 {
-                                    password = PromptForPassword("password");
+                                    password = appKey + ".txt";
+                                    if (!File.Exists(password))
+                                    {
+                                        password = PromptForPassword("password");
+                                    }
                                 }
 
-                                certificate = new X509Certificate2(appKey, password);
+                                if (File.Exists(password))
+                                {
+                                    certificate = new X509Certificate2(appKey, File.ReadAllText(password));
+                                }
+                                else
+                                {
+                                    certificate = new X509Certificate2(appKey, password);
+                                }
                             }
                         }
 
