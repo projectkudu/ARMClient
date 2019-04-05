@@ -3,7 +3,7 @@ ARMClient
 
 ARMClient is a simple command line tool to invoke the Azure Resource Manager API. You can install it from [Chocolatey](https://chocolatey.org/) by running:
 
-    choco install armclient
+    choco install armclient --source=https://chocolatey.org/api/v2/
 
 This [blog post](http://blog.davidebbo.com/2015/01/azure-resource-manager-client.html) introduces the tool and is a good place to start.
 
