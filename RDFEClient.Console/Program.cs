@@ -63,9 +63,9 @@ namespace RDFEClient
                 "  RDFEClient.exe AddExtension subscriptionId serviceName content",
                 "  RDFEClient.exe DeleteExtension subscriptionId serviceName extensionId",
                 "  RDFEClient.exe AddServiceTunnelingExtension subscriptionId serviceName",
-                "  RDFEClient.exe EnableServiceTunnelingExtension subscriptionId serviceName serviceName",
-                "  RDFEClient.exe DisableServiceTunnelingExtension subscriptionId serviceName serviceName",
-                "  RDFEClient.exe AddServiceTunnelingExtensionConfiguration subscriptionId serviceName serviceName",
+                "  RDFEClient.exe EnableServiceTunnelingExtension subscriptionId serviceName",
+                "  RDFEClient.exe DisableServiceTunnelingExtension subscriptionId serviceName",
+                "  RDFEClient.exe AddServiceTunnelingExtensionConfiguration subscriptionId serviceName",
                 "  RDFEClient.exe ListReservedIps subscriptionId",
                 "  RDFEClient.exe GetReservedIp subscriptionId reservedIpName",
                 "  RDFEClient.exe AddReservedIp subscriptionId reservedIpName location",
@@ -241,6 +241,7 @@ namespace RDFEClient
             var authHeader = GetAuthorizationHeader(subscriptionId);
             var uri = new Uri(string.Format("https://management.core.windows.net/{0}/services/hostedservices/{1}/deploymentslots/Production", subscriptionId, serviceName));
             string base64Configuration;
+            string roleName;
             using (var response = RDFEClient.HttpInvoke(uri, authHeader, "get").Result)
             {
                 if (!response.IsSuccessStatusCode)
@@ -255,6 +256,13 @@ namespace RDFEClient
 
                 var configurationElem = deploymentElem.XPathSelectElement("/x:Deployment/x:Configuration", mgr);
                 base64Configuration = configurationElem.Value;
+
+                var serviceConfigurationElem = XDocument.Parse(Encoding.UTF8.GetString(Convert.FromBase64String(base64Configuration))).Root;
+                var serviceConfigurationNs = serviceConfigurationElem.Name.Namespace;
+                var serviceConfigurationMgr = new XmlNamespaceManager(new NameTable());
+                serviceConfigurationMgr.AddNamespace("x", serviceConfigurationNs.NamespaceName);
+                roleName = null != serviceConfigurationElem.XPathSelectElement("/x:ServiceConfiguration/x:Role[@name='MultiRole']", serviceConfigurationMgr)
+                    ? "MultiRole" : "FrontEndRole";
             }
 
             var payload = string.Format(@"
@@ -265,7 +273,7 @@ namespace RDFEClient
   <ExtensionConfiguration>
     <NamedRoles>
       <Role>
-        <RoleName>FrontEndRole</RoleName>
+        <RoleName>{1}</RoleName>
         <Extensions>
           <Extension>
             <Id>FrontEndRole-Aquarius-Production-Ext-1</Id>
@@ -274,7 +282,7 @@ namespace RDFEClient
       </Role>
     </NamedRoles>
   </ExtensionConfiguration>
-</ChangeConfiguration>", base64Configuration);
+</ChangeConfiguration>", base64Configuration, roleName);
 
             UpdateConfiguration(subscriptionId, serviceName, payload);
         }
@@ -284,6 +292,7 @@ namespace RDFEClient
             var authHeader = GetAuthorizationHeader(subscriptionId);
             var uri = new Uri(string.Format("https://management.core.windows.net/{0}/services/hostedservices/{1}/deploymentslots/Production", subscriptionId, serviceName));
             string base64Configuration;
+            string roleName;
             using (var response = RDFEClient.HttpInvoke(uri, authHeader, "get").Result)
             {
                 if (!response.IsSuccessStatusCode)
@@ -298,6 +307,13 @@ namespace RDFEClient
 
                 var configurationElem = deploymentElem.XPathSelectElement("/x:Deployment/x:Configuration", mgr);
                 base64Configuration = configurationElem.Value;
+
+                var serviceConfigurationElem = XDocument.Parse(Encoding.UTF8.GetString(Convert.FromBase64String(base64Configuration))).Root;
+                var serviceConfigurationNs = serviceConfigurationElem.Name.Namespace;
+                var serviceConfigurationMgr = new XmlNamespaceManager(new NameTable());
+                serviceConfigurationMgr.AddNamespace("x", serviceConfigurationNs.NamespaceName);
+                roleName = null != serviceConfigurationElem.XPathSelectElement("/x:ServiceConfiguration/x:Role[@name='MultiRole']", serviceConfigurationMgr)
+                    ? "MultiRole" : "FrontEndRole";
             }
 
             var payload = string.Format(@"
@@ -308,7 +324,7 @@ namespace RDFEClient
   <ExtensionConfiguration>
     <NamedRoles>
       <Role>
-        <RoleName>FrontEndRole</RoleName>
+        <RoleName>{1}</RoleName>
         <Extensions>
           <Extension>
             <Id>FrontEndRole-Aquarius-Production-Ext-1</Id>
@@ -318,7 +334,7 @@ namespace RDFEClient
       </Role>
     </NamedRoles>
   </ExtensionConfiguration>
-</ChangeConfiguration>", base64Configuration);
+</ChangeConfiguration>", base64Configuration, roleName);
 
             UpdateConfiguration(subscriptionId, serviceName, payload);
         }
@@ -374,13 +390,16 @@ namespace RDFEClient
                 var mgr = new XmlNamespaceManager(new NameTable());
                 mgr.AddNamespace("x", serviceConfigurationNs.NamespaceName);
 
+                var roleName = null != serviceConfigurationElem.XPathSelectElement("/x:ServiceConfiguration/x:Role[@name='MultiRole']", mgr)
+                    ? "MultiRole" : "FrontEndRole";
+
                 serviceTunnelingConfigurations = new XElement(serviceConfigurationNs.GetName("ServiceTunnelingConfigurations"));
-                foreach (var endpoint in serviceConfigurationElem.XPathSelectElements("/x:ServiceConfiguration/x:NetworkConfiguration/x:AddressAssignments/x:VirtualIPs/x:VirtualIP/x:Endpoints/x:Endpoint[@role='FrontEndRole' and contains(@name,'FrontEndPort')]", mgr))
+                foreach (var endpoint in serviceConfigurationElem.XPathSelectElements("/x:ServiceConfiguration/x:NetworkConfiguration/x:AddressAssignments/x:VirtualIPs/x:VirtualIP/x:Endpoints/x:Endpoint[@role='"+ roleName + "' and contains(@name,'FrontEndPort')]", mgr))
                 {
                     var endpointName = endpoint.Attributes().First(a => a.Name.LocalName == "name").Value;
                     serviceTunnelingConfigurations.Add(new XElement(serviceConfigurationNs.GetName("ServiceTunnelingConfiguration"),
                             new XAttribute("name", "ServiceTunneling-" + endpointName),
-                            new XAttribute("role", "FrontEndRole"),
+                            new XAttribute("role", roleName),
                             new XAttribute("endpoint", endpointName)
                         ));
                 }
