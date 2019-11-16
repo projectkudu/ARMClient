@@ -7,7 +7,7 @@ You can install it from:
 
 * [Chocolatey](https://chocolatey.org/)
 
-      choco install armclient
+      choco install armclient --source=https://chocolatey.org/api/v2/
     
 * [Scoop](https://scoop.sh)
 
