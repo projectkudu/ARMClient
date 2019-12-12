@@ -396,8 +396,8 @@ namespace ARMClient
 
         static async Task<int> HttpInvoke(Uri uri, TokenCacheInfo cacheInfo, string verb, bool verbose, HttpContent content, Dictionary<string, List<string>> headers)
         {
-            var logginerHandler = new HttpLoggingHandler(new HttpClientHandler(), verbose);
-            return await Utils.HttpInvoke(uri, cacheInfo, verb, logginerHandler, content, headers);
+            var handler = new HttpLoggingHandler(new HttpClientHandler(), verbose);
+            return await Utils.HttpInvoke(uri, cacheInfo, verb, handler, content, headers);
         }
 
         //http://stackoverflow.com/questions/4810841/how-can-i-pretty-print-json-using-javascript

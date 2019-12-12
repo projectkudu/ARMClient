@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.IO.Compression;
 using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
@@ -9,6 +10,7 @@ using System.Text;
 using System.Threading.Tasks;
 using ARMClient.Authentication.AADAuthentication;
 using ARMClient.Authentication.Contracts;
+using Brotli;
 using Newtonsoft.Json.Linq;
 
 namespace ARMClient.Authentication.Utilities
@@ -46,6 +48,11 @@ namespace ARMClient.Authentication.Utilities
         public static bool GetDefaultVerbose()
         {
             return Environment.GetEnvironmentVariable("ARMCLIENT_VERBOSE") == "1";
+        }
+
+        public static bool GetDecodeResponse()
+        {
+            return Environment.GetEnvironmentVariable("ARMCLIENT_DECODE_RESPONSE") == "1";
         }
 
         public static string GetDefaultStamp()
@@ -299,6 +306,44 @@ namespace ARMClient.Authentication.Utilities
         {
             var host = uri.Host;
             return host.EndsWith(".vault.azure.net", StringComparison.OrdinalIgnoreCase);
+        }
+
+        public static async Task<string> ReadAndDecodeAsStringAsync(this HttpContent content)
+        {
+            var autoDecode = GetDecodeResponse();
+            var contentEncoding = content.Headers.ContentEncoding;
+            if (autoDecode)
+            {
+                if (contentEncoding.Any(enc => string.Equals("gzip", enc, StringComparison.OrdinalIgnoreCase)))
+                {
+                    var stream = new GZipStream(await content.ReadAsStreamAsync(), CompressionMode.Decompress);
+                    using (var memory = new MemoryStream())
+                    {
+                        await stream.CopyToAsync(memory);
+                        await memory.FlushAsync();
+                        return Encoding.UTF8.GetString(memory.ToArray());
+                    }
+                }
+                else if (contentEncoding.Any(enc => string.Equals("br", enc, StringComparison.OrdinalIgnoreCase))
+                    || contentEncoding.Any(enc => string.Equals("brotli", enc, StringComparison.OrdinalIgnoreCase)))
+                {
+                    var stream = new BrotliStream(await content.ReadAsStreamAsync(), CompressionMode.Decompress);
+                    using (var memory = new MemoryStream())
+                    {
+                        await stream.CopyToAsync(memory);
+                        await memory.FlushAsync();
+                        return Encoding.UTF8.GetString(memory.ToArray());
+                    }
+                }
+            }
+
+            if (contentEncoding.Any())
+            {
+                Console.WriteLine("[ Content is {0} encoding.  Set ARMCLIENT_DECODE_RESPONSE=1 env to automatically decode the content ]", string.Join(", ", contentEncoding));
+                Console.WriteLine();
+            }
+
+            return await content.ReadAsStringAsync();
         }
     }
 }
