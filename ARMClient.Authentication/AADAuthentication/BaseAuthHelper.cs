@@ -557,7 +557,8 @@ namespace ARMClient.Authentication.AADAuthentication
                         }
                         catch (AdalException adalEx)
                         {
-                            if (adalEx.Message.IndexOf("user_interaction_required") < 0)
+                            if (!string.Equals(adalEx.ErrorCode, "interaction_required", StringComparison.OrdinalIgnoreCase)
+                                && adalEx.Message.IndexOf("user_interaction_required") < 0)
                             {
                                 throw;
                             }
