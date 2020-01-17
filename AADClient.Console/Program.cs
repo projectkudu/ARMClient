@@ -45,6 +45,13 @@ namespace ARMClient
 
                         X509Certificate2 certificate = null;
                         var appKey = _parameters.Get(3, keyName: "appKey", requires: false);
+                        string resource = null;
+                        if (Uri.TryCreate(appKey, UriKind.Absolute, out _))
+                        {
+                            resource = appKey;
+                            appKey = _parameters.Get(4, keyName: "appKey", requires: false);
+                        }
+
                         if (appKey == null)
                         {
                             appKey = PromptForPassword("appKey");
@@ -72,8 +79,8 @@ namespace ARMClient
 
                         persistentAuthHelper.AzureEnvironments = Utils.GetDefaultEnv();
                         var info = certificate != null ?
-                            AADHelper.AcquireTokenByX509(tenantId, appId, certificate).Result :
-                            AADHelper.AcquireTokenBySPN(tenantId, appId, appKey).Result;
+                            AADHelper.AcquireTokenByX509(tenantId, appId, certificate, resource).Result :
+                            AADHelper.AcquireTokenBySPN(tenantId, appId, appKey, resource).Result;
                         Clipboard.SetText(info.access_token);
                         DumpClaims(info.access_token);
                         Console.WriteLine();

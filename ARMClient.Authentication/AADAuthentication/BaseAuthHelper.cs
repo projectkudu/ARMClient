@@ -373,13 +373,13 @@ namespace ARMClient.Authentication.AADAuthentication
             }
         }
 
-        public async Task<TokenCacheInfo> GetTokenBySpn(string tenantId, string appId, string appKey)
+        public async Task<TokenCacheInfo> GetTokenBySpn(string tenantId, string appId, string appKey, string resource)
         {
             this.TokenStorage.ClearCache();
             this.TenantStorage.ClearCache();
 
             var tokenCache = new CustomTokenCache();
-            var cacheInfo = GetAuthorizationResultBySpn(tokenCache, tenantId, appId, appKey, Constants.CSMResources[(int)AzureEnvironments]);
+            var cacheInfo = GetAuthorizationResultBySpn(tokenCache, tenantId, appId, appKey, resource ?? Constants.CSMResources[(int)AzureEnvironments]);
 
             var tenantCache = await GetTokenForTenants(tokenCache, cacheInfo, appId: appId, appKey: appKey);
 
@@ -389,13 +389,18 @@ namespace ARMClient.Authentication.AADAuthentication
             return cacheInfo;
         }
 
-        public async Task<TokenCacheInfo> GetTokenBySpn(string tenantId, string appId, X509Certificate2 certificate)
+        public async Task<TokenCacheInfo> GetTokenBySpn(string tenantId, string appId, X509Certificate2 certificate, string resource)
         {
             this.TokenStorage.ClearCache();
             this.TenantStorage.ClearCache();
 
             var tokenCache = new CustomTokenCache();
-            var cacheInfo = await GetAuthorizationResultBySpn(tokenCache, tenantId, appId, certificate, Constants.CSMResources[(int)AzureEnvironments]);
+            var cacheInfo = await GetAuthorizationResultBySpn(tokenCache, tenantId, appId, certificate, resource ?? Constants.CSMResources[(int)AzureEnvironments]);
+
+            if (cacheInfo.Resource != Constants.CSMResources[(int)AzureEnvironments])
+            {
+                cacheInfo = await GetAuthorizationResultBySpn(tokenCache, tenantId, appId, certificate, Constants.CSMResources[(int)AzureEnvironments]);
+            }
 
             var tenantCache = await GetTokenForTenants(tokenCache, cacheInfo, appId: appId, appKey: "_certificate_");
 
@@ -557,7 +562,8 @@ namespace ARMClient.Authentication.AADAuthentication
                         }
                         catch (AdalException adalEx)
                         {
-                            if (adalEx.Message.IndexOf("user_interaction_required") < 0)
+                            if (!string.Equals(adalEx.ErrorCode, "interaction_required", StringComparison.OrdinalIgnoreCase)
+                                && adalEx.Message.IndexOf("user_interaction_required") < 0)
                             {
                                 throw;
                             }

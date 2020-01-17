@@ -21,31 +21,31 @@ namespace ARMClient
         const string SPNPayload = "resource={0}&client_id={1}&grant_type=client_credentials&client_secret={2}";
         const string AssertionPayload = "resource={0}&client_assertion_type={1}&client_assertion={2}&grant_type=client_credentials";
 
-        public static async Task<OAuthToken> AcquireTokenBySPN(string tenantId, string clientId, string clientSecret)
+        public static async Task<OAuthToken> AcquireTokenBySPN(string tenantId, string clientId, string clientSecret, string resource)
         {
             var payload = String.Format(SPNPayload,
-                                        WebUtility.UrlEncode(ARMResource),
+                                        WebUtility.UrlEncode(resource ?? ARMResource),
                                         WebUtility.UrlEncode(clientId),
                                         WebUtility.UrlEncode(clientSecret));
 
             return await HttpPost(tenantId, payload);
         }
 
-        public static async Task<OAuthToken> AcquireTokenByUPN(string tenantId, string userName, string password)
+        public static async Task<OAuthToken> AcquireTokenByUPN(string tenantId, string userName, string password, string resource)
         {
             var payload = String.Format(UPNPayload,
-                                        WebUtility.UrlEncode(ARMResource),
+                                        WebUtility.UrlEncode(resource ?? ARMResource),
                                         WebUtility.UrlEncode(userName),
                                         WebUtility.UrlEncode(password));
 
             return await HttpPost(tenantId, payload);
         }
 
-        public static async Task<OAuthToken> AcquireTokenByX509(string tenantId, string clientId, X509Certificate2 cert)
+        public static async Task<OAuthToken> AcquireTokenByX509(string tenantId, string clientId, X509Certificate2 cert, string resource)
         {
             var jwt = GetClientAssertion(tenantId, clientId, cert);
             var payload = String.Format(AssertionPayload,
-                                        WebUtility.UrlEncode(ARMResource),
+                                        WebUtility.UrlEncode(resource ?? ARMResource),
                                         WebUtility.UrlEncode("urn:ietf:params:oauth:client-assertion-type:jwt-bearer"),
                                         WebUtility.UrlEncode(jwt));
 

@@ -305,7 +305,7 @@ namespace ARMClient.Authentication.Utilities
         public static bool IsKeyVault(Uri uri)
         {
             var host = uri.Host;
-            return host.EndsWith(".vault.azure.net", StringComparison.OrdinalIgnoreCase);
+            return Constants.KeyVaultResources.Select(u => new Uri(u)).Any(url => host.IndexOf(url.Host, StringComparison.OrdinalIgnoreCase) > 0);
         }
 
         public static async Task<string> ReadAndDecodeAsStringAsync(this HttpContent content)

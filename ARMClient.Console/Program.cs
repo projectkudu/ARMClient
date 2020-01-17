@@ -14,6 +14,7 @@ using ARMClient.Authentication.Contracts;
 using ARMClient.Authentication.Utilities;
 using Newtonsoft.Json.Linq;
 using System.Collections.Generic;
+using System.Net;
 
 namespace ARMClient
 {
@@ -22,6 +23,12 @@ namespace ARMClient
         [STAThread]
         static int Main(string[] args)
         {
+            // ensure Tls12
+            if ((ServicePointManager.SecurityProtocol & SecurityProtocolType.Tls12) != SecurityProtocolType.Tls12)
+            {
+                ServicePointManager.SecurityProtocol |= SecurityProtocolType.Tls12;
+            }
+
             Utils.SetTraceListener(new ConsoleTraceListener());
             try
             {
@@ -68,13 +75,13 @@ namespace ARMClient
                     else if (String.Equals(verb, "token", StringComparison.OrdinalIgnoreCase))
                     {
                         var tenantId = _parameters.Get(1, requires: false);
-                        _parameters.ThrowIfUnknown();
 
                         if (tenantId == null)
                         {
                             var accessToken = Utils.GetDefaultToken();
                             if (!String.IsNullOrEmpty(accessToken))
                             {
+                                _parameters.ThrowIfUnknown();
                                 DumpClaims(accessToken);
                                 Console.WriteLine();
                                 return 0;
@@ -83,6 +90,7 @@ namespace ARMClient
 
                         if (tenantId != null && tenantId.StartsWith("ey"))
                         {
+                            _parameters.ThrowIfUnknown();
                             DumpClaims(tenantId);
                             return 0;
                         }
@@ -92,17 +100,24 @@ namespace ARMClient
                         persistentAuthHelper.AzureEnvironments = Utils.GetDefaultEnv();
 
                         TokenCacheInfo cacheInfo;
-                        Uri resourceUri = null;
-                        if (Uri.TryCreate(tenantId, UriKind.Absolute, out resourceUri))
+                        if (Uri.TryCreate(tenantId, UriKind.Absolute, out _))
                         {
                             // https://vault.azure.net (no trailing /)
                             // https://graph.windows.net (no trailing /)
                             // https://management.core.windows.net/
+                            _parameters.ThrowIfUnknown();
                             cacheInfo = persistentAuthHelper.GetTokenByResource(tenantId).Result;
                         }
                         else
                         {
-                            cacheInfo = persistentAuthHelper.GetToken(tenantId, null).Result;
+                            var resource = _parameters.Get(2, requires: false);
+                            if (!string.IsNullOrEmpty(resource) && !Uri.TryCreate(resource, UriKind.Absolute, out _))
+                            {
+                                throw new CommandLineException($"Parameter '{resource}' must be resource uri!");
+                            }
+
+                            _parameters.ThrowIfUnknown();
+                            cacheInfo = persistentAuthHelper.GetToken(tenantId, resource).Result;
                         }
 
                         var bearer = cacheInfo.CreateAuthorizationHeader();
@@ -120,6 +135,13 @@ namespace ARMClient
 
                         X509Certificate2 certificate = null;
                         var appKey = _parameters.Get(3, keyName: "appKey", requires: false);
+                        string resource = null;
+                        if (appKey != null && appKey.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+                        {
+                            resource = appKey;
+                            appKey = _parameters.Get(4, keyName: "appKey", requires: false);
+                        }
+
                         if (appKey == null)
                         {
                             appKey = PromptForPassword("appKey");
@@ -158,8 +180,8 @@ namespace ARMClient
 
                         persistentAuthHelper.AzureEnvironments = Utils.GetDefaultEnv();
                         var cacheInfo = certificate != null ?
-                            persistentAuthHelper.GetTokenBySpn(tenantId, appId, certificate).Result :
-                            persistentAuthHelper.GetTokenBySpn(tenantId, appId, appKey).Result;
+                            persistentAuthHelper.GetTokenBySpn(tenantId, appId, certificate, resource).Result :
+                            persistentAuthHelper.GetTokenBySpn(tenantId, appId, appKey, resource).Result;
                         return 0;
                     }
                     else if (String.Equals(verb, "upn", StringComparison.OrdinalIgnoreCase))
@@ -209,7 +231,7 @@ namespace ARMClient
 
                         var resource = GetResource(uri, env);
                         var subscriptionId = GetTenantOrSubscription(uri);
-                        TokenCacheInfo cacheInfo = persistentAuthHelper.GetToken(subscriptionId, resource).Result;
+                        TokenCacheInfo cacheInfo = persistentAuthHelper.GetToken(subscriptionId, resource).Result ?? persistentAuthHelper.GetTokenByResource(resource).Result;
                         return HttpInvoke(uri, cacheInfo, verb, verbose, content, headers).Result;
                     }
                     else
@@ -718,9 +740,13 @@ namespace ARMClient
                 }
             }
 
-            if (Utils.IsKeyVault(uri))
+            for (int i = 0; i < Constants.KeyVaultResources.Length; ++i)
             {
-                return AzureEnvironments.Prod;
+                var suffix = new Uri(Constants.KeyVaultResources[i]).Host;
+                if (host.IndexOf(suffix, StringComparison.OrdinalIgnoreCase) > 0)
+                {
+                    return (AzureEnvironments)i;
+                }
             }
 
             return AzureEnvironments.Prod;
