@@ -68,13 +68,13 @@ namespace ARMClient
                     else if (String.Equals(verb, "token", StringComparison.OrdinalIgnoreCase))
                     {
                         var tenantId = _parameters.Get(1, requires: false);
-                        _parameters.ThrowIfUnknown();
 
                         if (tenantId == null)
                         {
                             var accessToken = Utils.GetDefaultToken();
                             if (!String.IsNullOrEmpty(accessToken))
                             {
+                                _parameters.ThrowIfUnknown();
                                 DumpClaims(accessToken);
                                 Console.WriteLine();
                                 return 0;
@@ -83,6 +83,7 @@ namespace ARMClient
 
                         if (tenantId != null && tenantId.StartsWith("ey"))
                         {
+                            _parameters.ThrowIfUnknown();
                             DumpClaims(tenantId);
                             return 0;
                         }
@@ -92,17 +93,24 @@ namespace ARMClient
                         persistentAuthHelper.AzureEnvironments = Utils.GetDefaultEnv();
 
                         TokenCacheInfo cacheInfo;
-                        Uri resourceUri = null;
-                        if (Uri.TryCreate(tenantId, UriKind.Absolute, out resourceUri))
+                        if (Uri.TryCreate(tenantId, UriKind.Absolute, out _))
                         {
                             // https://vault.azure.net (no trailing /)
                             // https://graph.windows.net (no trailing /)
                             // https://management.core.windows.net/
+                            _parameters.ThrowIfUnknown();
                             cacheInfo = persistentAuthHelper.GetTokenByResource(tenantId).Result;
                         }
                         else
                         {
-                            cacheInfo = persistentAuthHelper.GetToken(tenantId, null).Result;
+                            var resource = _parameters.Get(2, requires: false);
+                            if (!string.IsNullOrEmpty(resource) && !Uri.TryCreate(resource, UriKind.Absolute, out _))
+                            {
+                                throw new CommandLineException($"Parameter '{resource}' must be resource uri!");
+                            }
+
+                            _parameters.ThrowIfUnknown();
+                            cacheInfo = persistentAuthHelper.GetToken(tenantId, resource).Result;
                         }
 
                         var bearer = cacheInfo.CreateAuthorizationHeader();
@@ -718,9 +726,13 @@ namespace ARMClient
                 }
             }
 
-            if (Utils.IsKeyVault(uri))
+            for (int i = 0; i < Constants.KeyVaultResources.Length; ++i)
             {
-                return AzureEnvironments.Prod;
+                var suffix = new Uri(Constants.KeyVaultResources[i]).Host;
+                if (host.IndexOf(suffix, StringComparison.OrdinalIgnoreCase) > 0)
+                {
+                    return (AzureEnvironments)i;
+                }
             }
 
             return AzureEnvironments.Prod;

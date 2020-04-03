@@ -14,7 +14,9 @@ namespace ARMClient.Authentication
             "https://login.microsoftonline.com",
             "https://login.microsoftonline.com",
             "https://login.microsoftonline.de",
-            "https://login.microsoftonline.us"
+            "https://login.microsoftonline.us",
+            "https://login.microsoftonline.eaglex.ic.gov",
+            "https://login.microsoftonline.microsoft.scloud",
         };
 
         public static string[] AADGraphUrls = new[]
@@ -25,7 +27,9 @@ namespace ARMClient.Authentication
             "https://graph.windows.net",
             "https://graph.windows.net",
             "https://graph.cloudapi.de",
-            "https://graph.cloudapi.us"
+            "https://graph.cloudapi.us",
+            "https://graph.cloudapi.eaglex.ic.gov",
+            "https://graph.cloudapi.microsoft.scloud",
         };
 
         public static string[] CSMUrls = new[]
@@ -36,7 +40,9 @@ namespace ARMClient.Authentication
             "https://management.azure.com",
             "https://management.usgovcloudapi.net",
             "https://management.microsoftazure.de",
-            "https://notsupport.com"
+            "https://notsupport.com",
+            "https://management.azure.eaglex.ic.gov",
+            "https://management.azure.microsoft.scloud",
         };
 
         public static string[] RdfeUrls = new[]
@@ -47,7 +53,9 @@ namespace ARMClient.Authentication
             "https://management.core.windows.net",
             "https://management.core.usgovcloudapi.net",
             "https://management.core.cloudapi.de/",
-            "https://notsupport.com/"
+            "https://notsupport.com/",
+            "https://management.core.eaglex.ic.gov",
+            "https://management.core.microsoft.scloud",
         };
 
         public static string[] CSMResources = new[]
@@ -58,18 +66,22 @@ namespace ARMClient.Authentication
             "https://management.core.windows.net/",
             "https://management.core.usgovcloudapi.net/",
             "https://management.core.cloudapi.de/",
-            "https://notsupport.com/"
+            "https://notsupport.com/",
+            "https://management.core.eaglex.ic.gov/",
+            "https://management.core.microsoft.scloud/",
         };
 
         public static string[] KeyVaultResources = new[]
         {
+            "https://notsupport.com",
+            "https://notsupport.com",
+            "https://vault-int.azure-int.net",
             "https://vault.azure.net",
-            "https://vault.azure.net",
-            "https://vault.azure.net",
-            "https://vault.azure.net",
-            "https://vault.azure.net",
-            "https://vault.azure.net",
-            "https://vault.azure.net"
+            "https://notsupport.com",
+            "https://notsupport.com",
+            "https://notsupport.com",
+            "https://vault.cloudapi.eaglex.ic.gov",
+            "https://vault.cloudapi.microsoft.scloud",
         };
 
         public static string[] SCMSuffixes = new[]
@@ -80,7 +92,9 @@ namespace ARMClient.Authentication
             ".scm.azurewebsites.net",
             ".scm.azurewebsites.us",
             ".scm.azurewebsites.de",
-            ".notsupport.com"
+            ".notsupport.com",
+            ".scm.appservice.eaglex.ic.gov",
+            ".scm.appservice.microsoft.scloud",
         };
 
         public static string[] VsoSuffixes = new[]
@@ -91,7 +105,9 @@ namespace ARMClient.Authentication
             ".visualstudio.com",
             ".notsupport.com",
             ".notsupport.com",
-            ".notsupport.com"
+            ".notsupport.com",
+            ".notsupport.com",
+            ".notsupport.com",
         };
 
         public static string[] InfrastructureTenantIds = new[]

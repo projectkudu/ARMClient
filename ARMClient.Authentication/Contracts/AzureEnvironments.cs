@@ -9,6 +9,8 @@ namespace ARMClient.Authentication.Contracts
         Prod = 3,
         Fairfax = 4,
         Blackforest = 5,
-        Arlington = 6
+        Arlington = 6,
+        USNat = 7,
+        USSec = 8,
     }
 }
