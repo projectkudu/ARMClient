@@ -14,6 +14,7 @@ using ARMClient.Authentication.Contracts;
 using ARMClient.Authentication.Utilities;
 using Newtonsoft.Json.Linq;
 using System.Collections.Generic;
+using System.Net;
 
 namespace ARMClient
 {
@@ -22,6 +23,12 @@ namespace ARMClient
         [STAThread]
         static int Main(string[] args)
         {
+            // ensure Tls12
+            if ((ServicePointManager.SecurityProtocol & SecurityProtocolType.Tls12) != SecurityProtocolType.Tls12)
+            {
+                ServicePointManager.SecurityProtocol |= SecurityProtocolType.Tls12;
+            }
+
             Utils.SetTraceListener(new ConsoleTraceListener());
             try
             {
