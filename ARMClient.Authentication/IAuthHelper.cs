@@ -7,7 +7,7 @@ namespace ARMClient.Authentication
 {
     public interface IAuthHelper
     {
-        AzureEnvironments AzureEnvironments { get; set; }
+        void SetAzureEnvironment(string env);
         Task AcquireTokens();
         Task AzLogin();
         Task<TokenCacheInfo> GetToken(string id, string resource);

@@ -6,94 +6,6 @@ namespace ARMClient.Authentication
 {
     public static class Constants
     {
-        public static string[] AADLoginUrls = new[]
-        {
-            "https://login.chinacloudapi.cn",
-            "https://login.windows-ppe.net",
-            "https://login.windows-ppe.net",
-            "https://login.microsoftonline.com",
-            "https://login.microsoftonline.com",
-            "https://login.microsoftonline.de",
-            "https://login.microsoftonline.us",
-        };
-
-        public static string[] AADGraphUrls = new[]
-        {
-            "https://graph.chinacloudapi.cn",
-            "https://graph.ppe.windows.net",
-            "https://graph.ppe.windows.net",
-            "https://graph.windows.net",
-            "https://graph.windows.net",
-            "https://graph.cloudapi.de",
-            "https://graph.cloudapi.us",
-        };
-
-        public static string[] CSMUrls = new[]
-        {
-            "https://management.chinacloudapi.cn",
-            "https://api-current.resources.windows-int.net",
-            "https://api-dogfood.resources.windows-int.net",
-            "https://management.azure.com",
-            "https://management.usgovcloudapi.net",
-            "https://management.microsoftazure.de",
-            "https://notsupport.com",
-        };
-
-        public static string[] RdfeUrls = new[]
-        {
-            "https://management.core.chinacloudapi.cn",
-            "https://umapi.rdfetest.dnsdemo4.com",
-            "https://umapi-preview.core.windows-int.net",
-            "https://management.core.windows.net",
-            "https://management.core.usgovcloudapi.net",
-            "https://management.core.cloudapi.de/",
-            "https://notsupport.com/",
-        };
-
-        public static string[] CSMResources = new[]
-        {
-            "https://management.core.chinacloudapi.cn/",
-            "https://management.core.windows.net/",
-            "https://management.core.windows.net/",
-            "https://management.core.windows.net/",
-            "https://management.core.usgovcloudapi.net/",
-            "https://management.core.cloudapi.de/",
-            "https://notsupport.com/",
-        };
-
-        public static string[] KeyVaultResources = new[]
-        {
-            "https://notsupport.com",
-            "https://notsupport.com",
-            "https://vault-int.azure-int.net",
-            "https://vault.azure.net",
-            "https://notsupport.com",
-            "https://notsupport.com",
-            "https://notsupport.com",
-        };
-
-        public static string[] SCMSuffixes = new[]
-        {
-            ".scm.chinacloudsites.cn",
-            ".scm.antdir0.antares-test.windows-int.net",
-            ".windows-int.net",
-            ".scm.azurewebsites.net",
-            ".scm.azurewebsites.us",
-            ".scm.azurewebsites.de",
-            ".notsupport.com",
-        };
-
-        public static string[] VsoSuffixes = new[]
-        {
-            ".notsupport.com",
-            ".notsupport.com",
-            ".tfsallin.net",
-            ".visualstudio.com",
-            ".notsupport.com",
-            ".notsupport.com",
-            ".notsupport.com",
-        };
-
         public static string[] InfrastructureTenantIds = new[]
         {
             "ea8a4392-515e-481f-879e-6571ff2a8a36",
@@ -119,5 +31,7 @@ namespace ARMClient.Authentication
         public const string AADGraphApiVersion = "1.5";
         public const string JsonContentType = "application/json";
         public const string XmlContentType = "text/xml";
+        public const string ARMProdEnv = "Prod";
+        public const string ARMDogfoodEnv = "Dogfood";
     }
 }

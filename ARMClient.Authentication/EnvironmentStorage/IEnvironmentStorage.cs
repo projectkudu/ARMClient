@@ -4,8 +4,8 @@ namespace ARMClient.Authentication.EnvironmentStorage
 {
     public interface IEnvironmentStorage
     {
-        void SaveEnvironment(AzureEnvironments azureEnvironment);
-        AzureEnvironments GetSavedEnvironment();
+        void SaveEnvironment(string env);
+        string GetSavedEnvironment();
         bool IsCacheValid();
         void ClearSavedEnvironment();
     }

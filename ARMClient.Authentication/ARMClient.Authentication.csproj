@@ -73,9 +73,9 @@
     <Compile Include="AADAuthentication\AuthHelper.cs" />
     <Compile Include="AADAuthentication\BaseAuthHelper.cs" />
     <Compile Include="AADAuthentication\PersistentAuthHelper.cs" />
+    <Compile Include="ARMConfiguration.cs" />
     <Compile Include="Constants.cs" />
     <Compile Include="Contracts\AzAccessToken.cs" />
-    <Compile Include="Contracts\AzureEnvironments.cs" />
     <Compile Include="Contracts\ResultOf.cs" />
     <Compile Include="Contracts\SubscriptionCacheInfo.cs" />
     <Compile Include="Contracts\SubscriptionInfo.cs" />

@@ -4,15 +4,16 @@ namespace ARMClient.Authentication.EnvironmentStorage
 {
     class MemoryEnvironmentStorage : IEnvironmentStorage
     {
-        private AzureEnvironments _azureEnvironments = AzureEnvironments.Prod;
-        public void SaveEnvironment(AzureEnvironments azureEnvironment)
+        private string _env = Constants.ARMProdEnv;
+
+        public void SaveEnvironment(string env)
         {
-            this._azureEnvironments = azureEnvironment;
+            this._env = env;
         }
 
-        public AzureEnvironments GetSavedEnvironment()
+        public string GetSavedEnvironment()
         {
-            return this._azureEnvironments;
+            return this._env;
         }
 
         public bool IsCacheValid()
@@ -22,7 +23,7 @@ namespace ARMClient.Authentication.EnvironmentStorage
 
         public void ClearSavedEnvironment()
         {
-            this._azureEnvironments = AzureEnvironments.Prod;
+            this._env = Constants.ARMProdEnv;
         }
     }
 }

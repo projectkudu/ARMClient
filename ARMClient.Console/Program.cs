@@ -1,7 +1,8 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
@@ -13,8 +14,6 @@ using ARMClient.Authentication.AADAuthentication;
 using ARMClient.Authentication.Contracts;
 using ARMClient.Authentication.Utilities;
 using Newtonsoft.Json.Linq;
-using System.Collections.Generic;
-using System.Net;
 
 namespace ARMClient
 {
@@ -42,8 +41,7 @@ namespace ARMClient
                         var env = _parameters.Get(1, requires: false);
                         _parameters.ThrowIfUnknown();
 
-                        persistentAuthHelper.AzureEnvironments = env == null ? Utils.GetDefaultEnv() :
-                            (AzureEnvironments)Enum.Parse(typeof(AzureEnvironments), args[1], ignoreCase: true);
+                        persistentAuthHelper.SetAzureEnvironment(!string.IsNullOrEmpty(env) ? env : Utils.GetDefaultEnv());
                         persistentAuthHelper.AcquireTokens().Wait();
                         return 0;
                     }
@@ -51,7 +49,7 @@ namespace ARMClient
                     {
                         _parameters.ThrowIfUnknown();
 
-                        persistentAuthHelper.AzureEnvironments = AzureEnvironments.Prod;
+                        persistentAuthHelper.SetAzureEnvironment(Constants.ARMProdEnv);
                         persistentAuthHelper.AzLogin().Wait();
                         return 0;
                     }
@@ -96,8 +94,6 @@ namespace ARMClient
                         }
 
                         EnsureTokenCache(persistentAuthHelper);
-
-                        persistentAuthHelper.AzureEnvironments = Utils.GetDefaultEnv();
 
                         TokenCacheInfo cacheInfo;
                         if (Uri.TryCreate(tenantId, UriKind.Absolute, out _))
@@ -178,7 +174,7 @@ namespace ARMClient
 
                         _parameters.ThrowIfUnknown();
 
-                        persistentAuthHelper.AzureEnvironments = Utils.GetDefaultEnv();
+                        persistentAuthHelper.SetAzureEnvironment(Utils.GetDefaultEnv());
                         var cacheInfo = certificate != null ?
                             persistentAuthHelper.GetTokenBySpn(tenantId, appId, certificate, resource).Result :
                             persistentAuthHelper.GetTokenBySpn(tenantId, appId, appKey, resource).Result;
@@ -194,7 +190,7 @@ namespace ARMClient
                         }
                         _parameters.ThrowIfUnknown();
 
-                        persistentAuthHelper.AzureEnvironments = Utils.GetDefaultEnv();
+                        persistentAuthHelper.SetAzureEnvironment(Utils.GetDefaultEnv());
                         var cacheInfo = persistentAuthHelper.GetTokenByUpn(username, password).Result;
                         return 0;
                     }
@@ -222,14 +218,7 @@ namespace ARMClient
                             return HttpInvoke(uri, new TokenCacheInfo { AccessToken = accessToken }, verb, verbose, content, headers).Result;
                         }
 
-                        var env = GetAzureEnvironments(uri, persistentAuthHelper);
-                        if (!persistentAuthHelper.IsCacheValid() || persistentAuthHelper.AzureEnvironments != env)
-                        {
-                            persistentAuthHelper.AzureEnvironments = env;
-                            persistentAuthHelper.AcquireTokens().Wait();
-                        }
-
-                        var resource = GetResource(uri, env);
+                        var resource = GetResource(uri, persistentAuthHelper.ARMConfiguration);
                         var subscriptionId = GetTenantOrSubscription(uri);
                         TokenCacheInfo cacheInfo = persistentAuthHelper.GetToken(subscriptionId, resource).Result ?? persistentAuthHelper.GetTokenByResource(resource).Result;
                         return HttpInvoke(uri, cacheInfo, verb, verbose, content, headers).Result;
@@ -653,103 +642,26 @@ namespace ARMClient
             }
         }
 
-        static string GetResource(Uri uri, AzureEnvironments env)
+        static string GetResource(Uri uri, ARMConfiguration configuration)
         {
             try
             {
                 if (Utils.IsGraphApi(uri))
                 {
-                    return Constants.AADGraphUrls[(int)env];
+                    return configuration.AADGraphUrl;
                 }
 
                 if (Utils.IsKeyVault(uri))
                 {
-                    return Constants.KeyVaultResources[(int)env];
+                    return configuration.KeyVaultResource;
                 }
 
-                return Constants.CSMResources[(int)env];
+                return configuration.ARMResource;
             }
             catch (Exception ex)
             {
                 throw new InvalidOperationException(String.Format("Invalid url {0}!", uri), ex);
             }
-        }
-
-        static AzureEnvironments GetAzureEnvironments(Uri uri, PersistentAuthHelper persistentAuthHelper)
-        {
-            var host = uri.Host;
-
-            var graphs = Constants.AADGraphUrls.Where(url => url.IndexOf(host, StringComparison.OrdinalIgnoreCase) > 0);
-            if (graphs.Count() > 1)
-            {
-                var env = persistentAuthHelper.AzureEnvironments;
-                if (Constants.AADGraphUrls[(int)env].IndexOf(host, StringComparison.OrdinalIgnoreCase) > 0)
-                {
-                    return env;
-                }
-
-                env = Utils.GetDefaultEnv();
-                if (Constants.AADGraphUrls[(int)env].IndexOf(host, StringComparison.OrdinalIgnoreCase) > 0)
-                {
-                    return env;
-                }
-            }
-
-            for (int i = 0; i < Constants.AADGraphUrls.Length; ++i)
-            {
-                var url = Constants.AADGraphUrls[i];
-                if (url.IndexOf(host, StringComparison.OrdinalIgnoreCase) > 0)
-                {
-                    return (AzureEnvironments)i;
-                }
-            }
-
-            for (int i = 0; i < Constants.CSMUrls.Length; ++i)
-            {
-                var url = Constants.CSMUrls[i];
-                if (url.IndexOf(host, StringComparison.OrdinalIgnoreCase) > 0)
-                {
-                    return (AzureEnvironments)i;
-                }
-            }
-
-            for (int i = 0; i < Constants.RdfeUrls.Length; ++i)
-            {
-                var url = Constants.RdfeUrls[i];
-                if (url.IndexOf(host, StringComparison.OrdinalIgnoreCase) > 0)
-                {
-                    return (AzureEnvironments)i;
-                }
-            }
-
-            for (int i = 0; i < Constants.SCMSuffixes.Length; ++i)
-            {
-                var suffix = Constants.SCMSuffixes[i];
-                if (host.IndexOf(suffix, StringComparison.OrdinalIgnoreCase) > 0)
-                {
-                    return (AzureEnvironments)i;
-                }
-            }
-
-            for (int i = 0; i < Constants.VsoSuffixes.Length; ++i)
-            {
-                var suffix = Constants.VsoSuffixes[i];
-                if (host.IndexOf(suffix, StringComparison.OrdinalIgnoreCase) > 0)
-                {
-                    return (AzureEnvironments)i;
-                }
-            }
-
-            for (int i = 0; i < Constants.KeyVaultResources.Length; ++i)
-            {
-                var suffix = new Uri(Constants.KeyVaultResources[i]).Host;
-                if (host.IndexOf(suffix, StringComparison.OrdinalIgnoreCase) > 0)
-                {
-                    return (AzureEnvironments)i;
-                }
-            }
-
-            return AzureEnvironments.Prod;
         }
     }
 }

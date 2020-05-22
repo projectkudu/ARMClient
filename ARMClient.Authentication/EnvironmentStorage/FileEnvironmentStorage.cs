@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Diagnostics;
 using System.IO;
 using ARMClient.Authentication.Contracts;
 using ARMClient.Authentication.Utilities;
@@ -11,24 +10,24 @@ namespace ARMClient.Authentication.EnvironmentStorage
     {
         private const string _fileName = "recent_env.txt";
 
-        public void SaveEnvironment(AzureEnvironments azureEnvironment)
+        public void SaveEnvironment(string env)
         {
             var json = new JObject();
             json["ver"] = Constants.FileVersion.Value;
-            json["env"] = azureEnvironment.ToString();
+            json["env"] = env;
             File.WriteAllText(ProtectedFile.GetCacheFile(_fileName), json.ToString());
         }
 
-        public AzureEnvironments GetSavedEnvironment()
+        public string GetSavedEnvironment()
         {
             var file = ProtectedFile.GetCacheFile(_fileName);
             if (File.Exists(file))
             {
                 var json = JObject.Parse(File.ReadAllText(file));
-                return (AzureEnvironments)Enum.Parse(typeof(AzureEnvironments), json.Value<string>("env"));
+                return json.Value<string>("env");
             }
 
-            return AzureEnvironments.Prod;
+            return Constants.ARMProdEnv;
         }
 
         public bool IsCacheValid()
@@ -47,9 +46,7 @@ namespace ARMClient.Authentication.EnvironmentStorage
                     ClearAll();
                     return false;
                 }
-
-                AzureEnvironments unused;
-                return Enum.TryParse<AzureEnvironments>(json.Value<string>("env"), out unused);
+                return true;
             }
             catch (Exception)
             {
