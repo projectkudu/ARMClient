@@ -27,7 +27,7 @@ namespace ARMClient.Authentication.EnvironmentStorage
                 return json.Value<string>("env");
             }
 
-            return Constants.ARMProdEnv;
+            return Utils.GetDefaultEnv();
         }
 
         public bool IsCacheValid()

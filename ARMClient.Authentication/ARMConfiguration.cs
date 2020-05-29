@@ -105,5 +105,32 @@ namespace ARMClient.Authentication
 
             throw new InvalidOperationException($"Configuration for {key} is not found.   Please see https://github.com/projectkudu/ARMClient/wiki/ARMConfiguration for details.");
         }
+
+        public static string GetEnvironmentByRequest(Uri uri)
+        {
+            foreach (var pair in _defaults)
+            {
+                if (Uri.TryCreate(pair.Value, UriKind.Absolute, out Uri defaultUri))
+                {
+                    if (uri.Host.EndsWith(defaultUri.Host, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return pair.Key.Split('.')[0];
+                    }
+                }
+            }
+
+            foreach (var pair in _configs)
+            {
+                if (Uri.TryCreate(pair.Value, UriKind.Absolute, out Uri defaultUri))
+                {
+                    if (uri.Host.EndsWith(defaultUri.Host, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return pair.Key.Split('.')[0];
+                    }
+                }
+            }
+
+            return null;
+        }
     }
 }

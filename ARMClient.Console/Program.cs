@@ -218,9 +218,16 @@ namespace ARMClient
                             return HttpInvoke(uri, new TokenCacheInfo { AccessToken = accessToken }, verb, verbose, content, headers).Result;
                         }
 
+                        var env = ARMConfiguration.GetEnvironmentByRequest(uri) ?? Utils.GetDefaultEnv();
+                        if (!persistentAuthHelper.IsCacheValid() || !string.Equals(env, persistentAuthHelper.ARMConfiguration.AzureEnvironment, StringComparison.OrdinalIgnoreCase))
+                        {
+                            persistentAuthHelper.SetAzureEnvironment(env);
+                            persistentAuthHelper.AcquireTokens().Wait();
+                        }
+
                         var resource = GetResource(uri, persistentAuthHelper.ARMConfiguration);
                         var subscriptionId = GetTenantOrSubscription(uri);
-                        TokenCacheInfo cacheInfo = persistentAuthHelper.GetToken(subscriptionId, resource).Result ?? persistentAuthHelper.GetTokenByResource(resource).Result;
+                        var cacheInfo = persistentAuthHelper.GetToken(subscriptionId, resource).Result ?? persistentAuthHelper.GetTokenByResource(resource).Result;
                         return HttpInvoke(uri, cacheInfo, verb, verbose, content, headers).Result;
                     }
                     else
