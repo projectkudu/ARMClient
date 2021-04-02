@@ -214,13 +214,14 @@ namespace ARMClient
 
                         var content = ParseHttpContent(verb, _parameters);
                         var headers = _parameters.GetValue<Dictionary<string, List<string>>>("-h", requires: false);
+                        var http2 = _parameters.Get("-http2", requires: false) != null;
                         _parameters.ThrowIfUnknown();
 
                         var uri = Utils.EnsureAbsoluteUri(path, persistentAuthHelper);
                         var accessToken = Utils.GetDefaultToken();
                         if (!String.IsNullOrEmpty(accessToken))
                         {
-                            return HttpInvoke(uri, new TokenCacheInfo { AccessToken = accessToken }, verb, verbose, content, headers).Result;
+                            return HttpInvoke(uri, new TokenCacheInfo { AccessToken = accessToken }, verb, verbose, content, headers, http2).Result;
                         }
 
                         var env = ARMConfiguration.GetEnvironmentByRequest(uri) ?? Utils.GetDefaultEnv();
@@ -233,7 +234,7 @@ namespace ARMClient
                         var resource = GetResource(uri, persistentAuthHelper.ARMConfiguration);
                         var subscriptionId = GetTenantOrSubscription(uri);
                         var cacheInfo = persistentAuthHelper.GetToken(subscriptionId, resource).Result ?? persistentAuthHelper.GetTokenByResource(resource).Result;
-                        return HttpInvoke(uri, cacheInfo, verb, verbose, content, headers).Result;
+                        return HttpInvoke(uri, cacheInfo, verb, verbose, content, headers, http2).Result;
                     }
                     else
                     {
@@ -359,8 +360,9 @@ namespace ARMClient
 
             Console.WriteLine();
             Console.WriteLine("Call ARM api");
-            Console.WriteLine("    ARMClient.exe [get|post|put|patch|delete] [url] (<@file|content>) (-h \"header: value\") (-verbose)");
+            Console.WriteLine("    ARMClient.exe [get|post|put|patch|delete] [url] (<@file|content>) (-h \"header: value\") (-verbose) (-http2)");
             Console.WriteLine("    Use '-h' multiple times to add more than one custom HTTP header.");
+            Console.WriteLine("    Use '-http2' to force http/2.");
 
             Console.WriteLine();
             Console.WriteLine("Copy token to clipboard");
@@ -417,9 +419,15 @@ namespace ARMClient
             return null;
         }
 
-        static async Task<int> HttpInvoke(Uri uri, TokenCacheInfo cacheInfo, string verb, bool verbose, HttpContent content, Dictionary<string, List<string>> headers)
+        static async Task<int> HttpInvoke(Uri uri, TokenCacheInfo cacheInfo, string verb, bool verbose, HttpContent content, Dictionary<string, List<string>> headers, bool http2)
         {
-            var handler = new HttpLoggingHandler(new HttpClientHandler(), verbose);
+            var winhttp = http2 ? new WinHttpHandler() : null;
+            if (Utils.GetSkipSslVerify() && winhttp != null)
+            {
+                winhttp.ServerCertificateValidationCallback = delegate { return true; };
+            }
+
+            var handler = new HttpLoggingHandler((HttpMessageHandler)winhttp ?? new HttpClientHandler(), verbose);
             return await Utils.HttpInvoke(uri, cacheInfo, verb, handler, content, headers);
         }
 

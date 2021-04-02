@@ -28,6 +28,11 @@ namespace ARMClient
             const ConsoleColor successColor = ConsoleColor.Green;
             const ConsoleColor failureColor = ConsoleColor.Red;
 
+            if (InnerHandler is WinHttpHandler)
+            {
+                request.Version = new Version(2, 0);
+            }
+
             ConsoleColor originalColor = Console.ForegroundColor;
             if (_verbose)
             {
