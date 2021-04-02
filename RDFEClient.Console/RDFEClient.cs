@@ -5,8 +5,11 @@ using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Reflection;
+using System.Security.Cryptography.X509Certificates;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using ARMClient.Authentication.AADAuthentication;
+using ARMClient.Authentication.Utilities;
 using Newtonsoft.Json.Linq;
 
 namespace RDFEClient
@@ -18,26 +21,64 @@ namespace RDFEClient
 
         public static string Jwt { get; set; }
 
-        public static HttpClient HttpClient = new HttpClient(new HttpLoggingHandler(new HttpClientHandler(), verbose: true));
-
-        public static Lazy<string> FileVersion = new Lazy<string>(() =>
+        public readonly static Lazy<string> FileVersion = new Lazy<string>(() =>
         {
             Assembly assembly = Assembly.GetExecutingAssembly();
             FileVersionInfo fvi = FileVersionInfo.GetVersionInfo(assembly.Location);
             return fvi.FileVersion;
         });
 
-        public static Lazy<string> UserAgent = new Lazy<string>(() =>
+        public readonly static Lazy<string> UserAgent = new Lazy<string>(() =>
         {
             return "RDFEClient/" + FileVersion.Value;
         });
 
-        public static async Task<HttpResponseMessage> HttpInvoke(Uri uri, string authHeader, string verb, HttpContent content = null)
+        public readonly static Lazy<X509Certificate2> RDFEClientCertificate = new Lazy<X509Certificate2>(() =>
         {
-            var client = HttpClient;
+            var rdfeCertThumbprint = Environment.GetEnvironmentVariable("RDFECLIENT_CERT_THUMBPRINT");
+            if (string.IsNullOrEmpty(rdfeCertThumbprint))
+            {
+                return null;
+            }
+
+            var store = new X509Store(StoreName.My, StoreLocation.LocalMachine);
+            store.Open(OpenFlags.ReadOnly);
+            try
+            {
+                var certs = store.Certificates.Find(X509FindType.FindByThumbprint, rdfeCertThumbprint, validOnly: false);
+                if (certs.Count == 0)
+                {
+                    return null;
+                }
+
+                return certs[0];
+            }
+            finally
+            {
+                store.Close();
+            }
+        });
+
+        public static HttpClient GetHttpClient(string subscriptionId)
+        {
+            var handler = new WebRequestHandler();
+            var httpClient = new HttpClient(new HttpLoggingHandler(handler, verbose: true));
+            if (RDFEClientCertificate.Value != null)
+            {
+                handler.ClientCertificates.Add(RDFEClientCertificate.Value);
+            }
+            else
+            {
+                httpClient.DefaultRequestHeaders.Add("Authorization", GetAuthorizationHeader(subscriptionId));
+            }
+            return httpClient;
+        }
+
+        public static async Task<HttpResponseMessage> HttpInvoke(Uri uri, string subscriptionId, string verb, HttpContent content = null)
+        {
+            var client = GetHttpClient(subscriptionId);
             using (var request = new HttpRequestMessage(new HttpMethod(verb.ToUpper()), uri))
             {
-                request.Headers.Add("Authorization", authHeader);
                 request.Headers.Add("User-Agent", UserAgent.Value);
                 request.Headers.Add("Accept", JsonContentType);
                 request.Headers.Add("x-ms-version", "2017-06-01");
@@ -258,6 +299,22 @@ namespace RDFEClient
             {
                 Console.ForegroundColor = originalColor;
             }
+        }
+
+        static string GetAuthorizationHeader(string subscriptionId)
+        {
+            Utils.SetTraceListener(new ConsoleTraceListener());
+
+            var accessToken = Utils.GetDefaultToken();
+            if (!String.IsNullOrEmpty(accessToken))
+            {
+                return String.Format("Bearer {0}", accessToken);
+            }
+
+            var persistentAuthHelper = new PersistentAuthHelper();
+            var cacheInfo = persistentAuthHelper.GetToken(subscriptionId, "https://management.core.windows.net/").Result;
+            return cacheInfo.CreateAuthorizationHeader();
+
         }
     }
 }

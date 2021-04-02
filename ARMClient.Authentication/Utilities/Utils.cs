@@ -50,6 +50,11 @@ namespace ARMClient.Authentication.Utilities
             return Environment.GetEnvironmentVariable("ARMCLIENT_VERBOSE") == "1";
         }
 
+        public static bool GetSkipSslVerify()
+        {
+            return Environment.GetEnvironmentVariable("ARMCLIENT_SKIP_SSL_VERIFY") == "1";
+        }
+
         public static bool GetDecodeResponse()
         {
             return Environment.GetEnvironmentVariable("ARMCLIENT_DECODE_RESPONSE") == "1";

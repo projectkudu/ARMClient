@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -71,6 +70,8 @@ namespace RDFEClient
                 "  RDFEClient.exe AddReservedIp subscriptionId reservedIpName location",
                 "  RDFEClient.exe DeleteReservedIp subscriptionId reservedIpName",
                 "  RDFEClient.exe GetOperation subscriptionId requestId",
+                "  RDFEClient.exe ListOperatingSystems subscriptionId",
+                "  RDFEClient.exe ListOperatingSystemFamilies subscriptionId",
             })
             {
                 if (string.IsNullOrEmpty(methodName) || cmd.IndexOf(" " + methodName + " ", StringComparison.OrdinalIgnoreCase) > 0)
@@ -99,27 +100,24 @@ namespace RDFEClient
 
         static void GetDeployment(string subscriptionId, string serviceName)
         {
-            var authHeader = GetAuthorizationHeader(subscriptionId);
             var uri = new Uri(string.Format("https://management.core.windows.net/{0}/services/hostedservices/{1}/deploymentslots/Production", subscriptionId, serviceName));
-            using (var response = RDFEClient.HttpInvoke(uri, authHeader, "get").Result)
+            using (var response = RDFEClient.HttpInvoke(uri, subscriptionId, "get").Result)
             {
             }
         }
 
         static void DeleteDeployment(string subscriptionId, string serviceName)
         {
-            var authHeader = GetAuthorizationHeader(subscriptionId);
             var uri = new Uri(string.Format("https://management.core.windows.net/{0}/services/hostedservices/{1}/deploymentslots/Production", subscriptionId, serviceName));
-            using (var response = RDFEClient.HttpInvoke(uri, authHeader, "delete").Result)
+            using (var response = RDFEClient.HttpInvoke(uri, subscriptionId, "delete").Result)
             {
             }
         }
 
         static void GetConfiguration(string subscriptionId, string serviceName)
         {
-            var authHeader = GetAuthorizationHeader(subscriptionId);
             var uri = new Uri(string.Format("https://management.core.windows.net/{0}/services/hostedservices/{1}/deploymentslots/Production", subscriptionId, serviceName));
-            using (var response = RDFEClient.HttpInvoke(uri, authHeader, "get").Result)
+            using (var response = RDFEClient.HttpInvoke(uri, subscriptionId, "get").Result)
             {
                 if (!response.IsSuccessStatusCode)
                 {
@@ -159,43 +157,24 @@ namespace RDFEClient
 ", Convert.ToBase64String(Encoding.UTF8.GetBytes(XDocument.Parse(payload).ToString(SaveOptions.DisableFormatting))));
             }
 
-            var authHeader = GetAuthorizationHeader(subscriptionId);
             var uri = new Uri(string.Format("https://management.core.windows.net/{0}/services/hostedservices/{1}/deploymentslots/Production/?comp=config", subscriptionId, serviceName));
-            using (var response = RDFEClient.HttpInvoke(uri, authHeader, "post", new StringContent(payload, Encoding.UTF8, "text/xml")).Result)
+            using (var response = RDFEClient.HttpInvoke(uri, subscriptionId, "post", new StringContent(payload, Encoding.UTF8, "text/xml")).Result)
             {
             }
-        }
-
-        static string GetAuthorizationHeader(string subscriptionId)
-        {
-            Utils.SetTraceListener(new ConsoleTraceListener());
-
-            var accessToken = Utils.GetDefaultToken();
-            if (!String.IsNullOrEmpty(accessToken))
-            {
-                return String.Format("Bearer {0}", accessToken);
-            }
-
-            var persistentAuthHelper = new PersistentAuthHelper();
-            var cacheInfo = persistentAuthHelper.GetToken(subscriptionId, "https://management.core.windows.net/").Result;
-            return cacheInfo.CreateAuthorizationHeader();
-
         }
 
         static void ListExtensions(string subscriptionId, string serviceName)
         {
-            var authHeader = GetAuthorizationHeader(subscriptionId);
             var uri = new Uri(string.Format("https://management.core.windows.net/{0}/services/hostedservices/{1}/extensions", subscriptionId, serviceName));
-            using (var response = RDFEClient.HttpInvoke(uri, authHeader, "get").Result)
+            using (var response = RDFEClient.HttpInvoke(uri, subscriptionId, "get").Result)
             {
             }
         }
 
         static void GetExtension(string subscriptionId, string serviceName, string extensionId)
         {
-            var authHeader = GetAuthorizationHeader(subscriptionId);
             var uri = new Uri(string.Format("https://management.core.windows.net/{0}/services/hostedservices/{1}/extensions/{2}", subscriptionId, serviceName, extensionId));
-            using (var response = RDFEClient.HttpInvoke(uri, authHeader, "get").Result)
+            using (var response = RDFEClient.HttpInvoke(uri, subscriptionId, "get").Result)
             {
             }
         }
@@ -208,9 +187,8 @@ namespace RDFEClient
                 payload = File.ReadAllText(content);
             }
 
-            var authHeader = GetAuthorizationHeader(subscriptionId);
             var uri = new Uri(string.Format("https://management.core.windows.net/{0}/services/hostedservices/{1}/extensions", subscriptionId, serviceName));
-            using (var response = RDFEClient.HttpInvoke(uri, authHeader, "post", new StringContent(payload, Encoding.UTF8, "text/xml")).Result)
+            using (var response = RDFEClient.HttpInvoke(uri, subscriptionId, "post", new StringContent(payload, Encoding.UTF8, "text/xml")).Result)
             {
             }
         }
@@ -229,20 +207,18 @@ namespace RDFEClient
   <Version>4.2</Version>
 </Extension>";
 
-            var authHeader = GetAuthorizationHeader(subscriptionId);
             var uri = new Uri(string.Format("https://management.core.windows.net/{0}/services/hostedservices/{1}/extensions", subscriptionId, serviceName));
-            using (var response = RDFEClient.HttpInvoke(uri, authHeader, "post", new StringContent(payload, Encoding.UTF8, "text/xml")).Result)
+            using (var response = RDFEClient.HttpInvoke(uri, subscriptionId, "post", new StringContent(payload, Encoding.UTF8, "text/xml")).Result)
             {
             }
         }
 
         static void EnableServiceTunnelingExtension(string subscriptionId, string serviceName)
         {
-            var authHeader = GetAuthorizationHeader(subscriptionId);
             var uri = new Uri(string.Format("https://management.core.windows.net/{0}/services/hostedservices/{1}/deploymentslots/Production", subscriptionId, serviceName));
             string base64Configuration;
             string roleName;
-            using (var response = RDFEClient.HttpInvoke(uri, authHeader, "get").Result)
+            using (var response = RDFEClient.HttpInvoke(uri, subscriptionId, "get").Result)
             {
                 if (!response.IsSuccessStatusCode)
                 {
@@ -289,11 +265,10 @@ namespace RDFEClient
 
         static void DisableServiceTunnelingExtension(string subscriptionId, string serviceName)
         {
-            var authHeader = GetAuthorizationHeader(subscriptionId);
             var uri = new Uri(string.Format("https://management.core.windows.net/{0}/services/hostedservices/{1}/deploymentslots/Production", subscriptionId, serviceName));
             string base64Configuration;
             string roleName;
-            using (var response = RDFEClient.HttpInvoke(uri, authHeader, "get").Result)
+            using (var response = RDFEClient.HttpInvoke(uri, subscriptionId, "get").Result)
             {
                 if (!response.IsSuccessStatusCode)
                 {
@@ -341,19 +316,17 @@ namespace RDFEClient
 
         static void DeleteExtension(string subscriptionId, string serviceName, string extensionId)
         {
-            var authHeader = GetAuthorizationHeader(subscriptionId);
             var uri = new Uri(string.Format("https://management.core.windows.net/{0}/services/hostedservices/{1}/extensions/{2}", subscriptionId, serviceName, extensionId));
-            using (var response = RDFEClient.HttpInvoke(uri, authHeader, "delete").Result)
+            using (var response = RDFEClient.HttpInvoke(uri, subscriptionId, "delete").Result)
             {
             }
         }
 
         static void AddServiceTunnelingExtensionConfiguration(string subscriptionId, string serviceName)
         {
-            var authHeader = GetAuthorizationHeader(subscriptionId);
             var uri = new Uri(string.Format("https://management.core.windows.net/{0}/services/hostedservices/{1}/deploymentslots/Production", subscriptionId, serviceName));
             XElement serviceConfigurationElem;
-            using (var response = RDFEClient.HttpInvoke(uri, authHeader, "get").Result)
+            using (var response = RDFEClient.HttpInvoke(uri, subscriptionId, "get").Result)
             {
                 if (!response.IsSuccessStatusCode)
                 {
@@ -417,18 +390,16 @@ namespace RDFEClient
 
         static void ListReservedIps(string subscriptionId)
         {
-            var authHeader = GetAuthorizationHeader(subscriptionId);
             var uri = new Uri(string.Format("https://management.core.windows.net/{0}/services/networking/reservedips", subscriptionId));
-            using (var response = RDFEClient.HttpInvoke(uri, authHeader, "get").Result)
+            using (var response = RDFEClient.HttpInvoke(uri, subscriptionId, "get").Result)
             {
             }
         }
 
         static void GetReservedIp(string subscriptionId, string reservedIpName)
         {
-            var authHeader = GetAuthorizationHeader(subscriptionId);
             var uri = new Uri(string.Format("https://management.core.windows.net/{0}/services/networking/reservedips/{1}", subscriptionId, reservedIpName));
-            using (var response = RDFEClient.HttpInvoke(uri, authHeader, "get").Result)
+            using (var response = RDFEClient.HttpInvoke(uri, subscriptionId, "get").Result)
             {
             }
         }
@@ -450,28 +421,41 @@ namespace RDFEClient
   </IPTags>
 </ReservedIP>", reservedIpName, location);
 
-            var authHeader = GetAuthorizationHeader(subscriptionId);
             var content = new StringContent(payload, Encoding.UTF8, "text/xml");
             var uri = new Uri(string.Format("https://management.core.windows.net/{0}/services/networking/reservedips", subscriptionId));
-            using (var response = RDFEClient.HttpInvoke(uri, authHeader, "post", content).Result)
+            using (var response = RDFEClient.HttpInvoke(uri, subscriptionId, "post", content).Result)
             {
             }
         }
 
         static void DeleteReservedIp(string subscriptionId, string reservedIpName)
         {
-            var authHeader = GetAuthorizationHeader(subscriptionId);
             var uri = new Uri(string.Format("https://management.core.windows.net/{0}/services/networking/reservedips/{1}", subscriptionId, reservedIpName));
-            using (var response = RDFEClient.HttpInvoke(uri, authHeader, "delete").Result)
+            using (var response = RDFEClient.HttpInvoke(uri, subscriptionId, "delete").Result)
             {
             }
         }
 
         static void GetOperation(string subscriptionId, string requestId)
         {
-            var authHeader = GetAuthorizationHeader(subscriptionId);
             var uri = new Uri(string.Format("https://management.core.windows.net/{0}/operations/{1}", subscriptionId, requestId));
-            using (var response = RDFEClient.HttpInvoke(uri, authHeader, "get").Result)
+            using (var response = RDFEClient.HttpInvoke(uri, subscriptionId, "get").Result)
+            {
+            }
+        }
+
+        static void ListOperatingSystems(string subscriptionId)
+        {
+            var uri = new Uri($"https://management.core.windows.net/{subscriptionId}/operatingsystems");
+            using (var response = RDFEClient.HttpInvoke(uri, subscriptionId, "get").Result)
+            {
+            }
+        }
+
+        static void ListOperatingSystemFamilies(string subscriptionId)
+        {
+            var uri = new Uri($"https://management.core.windows.net/{subscriptionId}/operatingsystemfamilies");
+            using (var response = RDFEClient.HttpInvoke(uri, subscriptionId, "get").Result)
             {
             }
         }

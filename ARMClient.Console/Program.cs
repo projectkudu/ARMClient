@@ -28,6 +28,11 @@ namespace ARMClient
                 ServicePointManager.SecurityProtocol |= SecurityProtocolType.Tls12;
             }
 
+            if (Utils.GetSkipSslVerify())
+            {
+                ServicePointManager.ServerCertificateValidationCallback = delegate { return true; };
+            }
+
             Utils.SetTraceListener(new ConsoleTraceListener());
             try
             {
