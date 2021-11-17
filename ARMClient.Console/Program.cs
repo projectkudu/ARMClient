@@ -218,13 +218,14 @@ namespace ARMClient
                         _parameters.ThrowIfUnknown();
 
                         var uri = Utils.EnsureAbsoluteUri(path, persistentAuthHelper);
+                        var env = ARMConfiguration.GetEnvironmentByRequest(uri) ?? Utils.GetDefaultEnv();
                         var accessToken = Utils.GetDefaultToken();
                         if (!String.IsNullOrEmpty(accessToken))
                         {
+                            persistentAuthHelper.SetAzureEnvironment(env);
                             return HttpInvoke(uri, new TokenCacheInfo { AccessToken = accessToken }, verb, verbose, content, headers, http2).Result;
                         }
 
-                        var env = ARMConfiguration.GetEnvironmentByRequest(uri) ?? Utils.GetDefaultEnv();
                         if (!persistentAuthHelper.IsCacheValid() || !string.Equals(env, persistentAuthHelper.ARMConfiguration.AzureEnvironment, StringComparison.OrdinalIgnoreCase))
                         {
                             persistentAuthHelper.SetAzureEnvironment(env);
