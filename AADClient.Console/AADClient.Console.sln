@@ -1,0 +1,55 @@
+﻿Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AADClient.Console", "AADClient.Console.csproj", "{7A00DD39-B2CD-45F4-9D8F-B548E1618280}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ARMClient.Authentication", "..\ARMClient.Authentication\ARMClient.Authentication.csproj", "{76DC78F7-DE22-40BA-ACFD-633FAB90E89A}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ARMClient.Console", "..\ARMClient.Console\ARMClient.Console.csproj", "{F2AA4D25-1C99-4C7D-8830-43AF5C24233A}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RDFEClient.Console", "..\RDFEClient.Console\RDFEClient.Console.csproj", "{18D8901C-6EB7-4A19-BA38-39FABE75241E}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ARMClient.Authentication", "..\ARMClient.Authentication", "{7DB482F0-7259-425A-AD9C-869D663FE756}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ARMClient.Console", "..\ARMClient.Console", "{AB889D73-3F4B-4998-BDE6-0715B8F7C176}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "RDFEClient.Console", "..\RDFEClient.Console", "{576663A5-9F73-415E-A3E4-B5A9CC6B89B3}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ARMClient", "..\..\ARMClient", "{130D6684-8B92-40F3-A35F-EC7D53AE03B9}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{7A00DD39-B2CD-45F4-9D8F-B548E1618280}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7A00DD39-B2CD-45F4-9D8F-B548E1618280}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7A00DD39-B2CD-45F4-9D8F-B548E1618280}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7A00DD39-B2CD-45F4-9D8F-B548E1618280}.Release|Any CPU.Build.0 = Release|Any CPU
+		{76DC78F7-DE22-40BA-ACFD-633FAB90E89A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{76DC78F7-DE22-40BA-ACFD-633FAB90E89A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{76DC78F7-DE22-40BA-ACFD-633FAB90E89A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{76DC78F7-DE22-40BA-ACFD-633FAB90E89A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F2AA4D25-1C99-4C7D-8830-43AF5C24233A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F2AA4D25-1C99-4C7D-8830-43AF5C24233A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F2AA4D25-1C99-4C7D-8830-43AF5C24233A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F2AA4D25-1C99-4C7D-8830-43AF5C24233A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{18D8901C-6EB7-4A19-BA38-39FABE75241E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{18D8901C-6EB7-4A19-BA38-39FABE75241E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{18D8901C-6EB7-4A19-BA38-39FABE75241E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{18D8901C-6EB7-4A19-BA38-39FABE75241E}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{76DC78F7-DE22-40BA-ACFD-633FAB90E89A} = {7DB482F0-7259-425A-AD9C-869D663FE756}
+		{7DB482F0-7259-425A-AD9C-869D663FE756} = {130D6684-8B92-40F3-A35F-EC7D53AE03B9}
+		{F2AA4D25-1C99-4C7D-8830-43AF5C24233A} = {AB889D73-3F4B-4998-BDE6-0715B8F7C176}
+		{AB889D73-3F4B-4998-BDE6-0715B8F7C176} = {130D6684-8B92-40F3-A35F-EC7D53AE03B9}
+		{18D8901C-6EB7-4A19-BA38-39FABE75241E} = {576663A5-9F73-415E-A3E4-B5A9CC6B89B3}
+		{576663A5-9F73-415E-A3E4-B5A9CC6B89B3} = {130D6684-8B92-40F3-A35F-EC7D53AE03B9}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {41830BF1-7E9E-407B-806E-3F7C2B5C2F9F}
+	EndGlobalSection
+EndGlobal

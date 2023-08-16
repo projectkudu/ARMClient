@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.Build.Traversal">
+  <ItemGroup>
+    <ProjectFile Include="AADClient.Console\AADClient.Console.csproj" />
+    <ProjectFile Include="ARMClient.Console\ARMClient.Console.csproj" />
+    <ProjectFile Include="ARMClient.Authentication\ARMClient.Authentication.csproj" />
+    <ProjectFile Include="RDFEClient.Console\RDFEClient.Console.csproj" />
+  </ItemGroup>
+</Project>
