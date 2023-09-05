@@ -4,6 +4,7 @@
         <RootNamespace>ARMClient.Authentication</RootNamespace>
         <AssemblyName>ARMClient.Authentication</AssemblyName>
         <TargetFramework>net461</TargetFramework>
+        <NoWarn>$(NoWarn);NU1507</NoWarn>
     </PropertyGroup>
     <ItemGroup>
         <PackageReference Include="Brotli.NET" />
