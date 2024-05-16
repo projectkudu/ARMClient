@@ -817,6 +817,12 @@ namespace ARMClient.Authentication.AADAuthentication
                     if (response.IsSuccessStatusCode)
                     {
                         var result = await response.Content.ReadAsAsync<ResultOf<TenantInfo>>();
+
+                        if (Guid.TryParse(Utils.GetLoginTenant(), out var loginTenant))
+                        {
+                            return result.value.Select(tenant => tenant.tenantId).Where(tid => tid == $"{loginTenant}").ToArray();
+                        }
+
                         return result.value.Select(tenant => tenant.tenantId).ToArray();
                     }
 
