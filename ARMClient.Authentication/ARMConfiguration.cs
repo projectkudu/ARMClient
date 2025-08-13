@@ -30,7 +30,7 @@ namespace ARMClient.Authentication
             { "Prod.VsoSuffix", ".visualstudio.com" },
 
             // https://docs.microsoft.com/en-us/azure/azure-government/documentation-government-developer-guide
-            { "Fairfax.AADGraphUrl", "https://graph.usgovcloudapi.net" },
+            { "Fairfax.AADGraphUrl", "https://graph.windows.net" },
             { "Fairfax.AADLoginUrl", "https://login.microsoftonline.us" },
             { "Fairfax.ARMResource", "https://management.core.usgovcloudapi.net/" },
             { "Fairfax.ARMUrl", "https://management.usgovcloudapi.net" },
