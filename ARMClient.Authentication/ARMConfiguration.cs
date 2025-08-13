@@ -31,7 +31,7 @@ namespace ARMClient.Authentication
 
             // https://docs.microsoft.com/en-us/azure/azure-government/documentation-government-developer-guide
             { "Fairfax.AADGraphUrl", "https://graph.windows.net" },
-            { "Fairfax.AADLoginUrl", "https://login.microsoftonline.com" },
+            { "Fairfax.AADLoginUrl", "https://login.microsoftonline.us" },
             { "Fairfax.ARMResource", "https://management.core.usgovcloudapi.net/" },
             { "Fairfax.ARMUrl", "https://management.usgovcloudapi.net" },
             { "Fairfax.KeyVaultResource", "https://vault.usgovcloudapi.net" },
