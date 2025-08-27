@@ -55,6 +55,25 @@ namespace ARMClient.Authentication
             { "Blackforest.KeyVaultResource", "https://vault.microsoftazure.de" },
             { "Blackforest.RDFEUrl", "https://management.core.cloudapi.de/" },
             { "Blackforest.ScmSuffix", ".scm.azurewebsites.de" },
+
+            // Sovereign cloud - France (Bleu)
+            { "Bleu.AADGraphUrl", "https://graph.svc.sovcloud.fr" },
+            { "Bleu.AADLoginUrl", "https://login.sovcloud-identity.fr" },
+            { "Bleu.ARMResource", "https://management.core.sovcloud-api.fr/" },
+            { "Bleu.ARMUrl", "https://management.sovcloud-api.fr" },
+            { "Bleu.KeyVaultResource", "https://vault.sovcloud-api.fr" },
+            { "Bleu.RDFEUrl", "https://management.core.sovcloud-api.fr" },
+            { "Bleu.ScmSuffix", ".scm.azurewebsites.fr" },
+
+
+            // Sovereign cloud - Germany (Delos)
+            { "Delos.AADGraphUrl", "https://graph.svc.sovcloud.fr" },
+            { "Delos.AADLoginUrl", "https://login.sovcloud-identity.de" },
+            { "Delos.ARMResource", "https://management.core.sovcloud-api.de/" },
+            { "Delos.ARMUrl", "https://management.sovcloud-api.de" },
+            { "Delos.KeyVaultResource", "https://vault.sovcloud-api.de" },
+            { "Delos.RDFEUrl", "https://management.core.sovcloud-api.de" },
+            { "Delos.ScmSuffix", ".scm.azurewebsites.de" },
         };
 
         private string _aadLoginUrl;
