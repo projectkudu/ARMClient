@@ -67,7 +67,7 @@ namespace ARMClient.Authentication
 
 
             // Sovereign cloud - Germany (Delos)
-            { "Delos.AADGraphUrl", "https://graph.svc.sovcloud.fr" },
+            { "Delos.AADGraphUrl", "https://graph.svc.sovcloud.de" },
             { "Delos.AADLoginUrl", "https://login.sovcloud-identity.de" },
             { "Delos.ARMResource", "https://management.core.sovcloud-api.de/" },
             { "Delos.ARMUrl", "https://management.sovcloud-api.de" },
