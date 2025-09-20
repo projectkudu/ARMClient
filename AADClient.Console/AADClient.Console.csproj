@@ -4,13 +4,11 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>AADClient</RootNamespace>
     <AssemblyName>AADClient</AssemblyName>
-    <TargetFramework>net461</TargetFramework>
+    <TargetFramework>net472</TargetFramework>
     <NoWarn>$(NoWarn);NU1507</NoWarn>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Microsoft.IdentityModel.Clients.ActiveDirectory" />
     <PackageReference Include="Newtonsoft.Json" />
-    <PackageReference Include="System.IdentityModel.Tokens.Jwt" />
     <PackageReference Include="System.Net.Http.WinHttpHandler" />
     <PackageReference Include="System.Numerics.Vectors" />
     <PackageReference Include="System.Runtime.CompilerServices.Unsafe" />

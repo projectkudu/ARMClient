@@ -1,6 +1,7 @@
 ﻿using System;
+using System.Linq;
 using ARMClient.Authentication.Utilities;
-using Microsoft.IdentityModel.Clients.ActiveDirectory;
+using Newtonsoft.Json.Linq;
 
 namespace ARMClient.Authentication.Contracts
 {
@@ -10,33 +11,21 @@ namespace ARMClient.Authentication.Contracts
         {
         }
 
-        public TokenCacheInfo(string tenantId, string appId, string appKey, string resource, AuthenticationResult result)
-            : this(resource, result)
+        public TokenCacheInfo(string token)
         {
-            AppId = appId;
-            AppKey = appKey;
-            TenantId = tenantId;
-        }
-
-        public TokenCacheInfo(string resource, AuthenticationResult result)
-        {
-            AccessToken = result.AccessToken;
-            DisplayableId = result.UserInfo == null ? null : result.UserInfo.DisplayableId;
-            ExpiresOn = result.ExpiresOn;
-            RefreshToken = result.RefreshToken;
-            Resource = resource;
-            TenantId = result.TenantId;
-        }
-
-        public TokenCacheInfo(string tenantId, string appId, string appKey, string resource, JwtHelper.OAuthToken token)
-        {
-            AppId = appId;
-            AppKey = appKey;
-            TenantId = tenantId;
-            Resource = resource;
-            AccessToken = token.access_token;
-            ExpiresOn = token.ExpirationTime;
-            RefreshToken = token.refresh_token;
+            AccessToken = token;
+            var json = JwtHelper.Parse(token);
+            DisplayableId = new[] { "upn", "unique_name", "name" }
+                .Select(json.Value<string>)
+                .Where(v => !string.IsNullOrEmpty(v))
+                .FirstOrDefault();
+            Resource = json.Value<string>("aud");
+            TenantId = json.Value<string>("tid");
+            ExpiresOn = DateTimeOffset.FromUnixTimeSeconds(json.Value<long>("exp"));
+            if (json.Value<string>("idtyp") == "app")
+            {
+                AppId = json.Value<string>("appid");
+            }
         }
 
         public string AppId { get; set; }
@@ -44,14 +33,9 @@ namespace ARMClient.Authentication.Contracts
         public string AccessToken { get; set; }
         public string DisplayableId { get; set; }
         public DateTimeOffset ExpiresOn { get; set; }
-        public string RefreshToken { get; set; }
         public string Resource { get; set; }
         public string TenantId { get; set; }
-        public string ClientId { get; set; }
 
-        public string CreateAuthorizationHeader()
-        {
-            return String.Format("Bearer {0}", AccessToken);
-        }
+        public string CreateAuthorizationHeader() => $"Bearer {AccessToken}";
     }
 }

@@ -51,7 +51,7 @@ namespace ARMClient
                     Console.ForegroundColor = originalColor;
                 }
 
-                foreach (var header in request.Headers)
+                foreach (var header in request.Content == null ? request.Headers : request.Headers.Concat(request.Content.Headers))
                 {
                     originalColor = Console.ForegroundColor;
                     try
@@ -99,7 +99,7 @@ namespace ARMClient
                     Console.ForegroundColor = originalColor;
                 }
 
-                foreach (var header in response.Content.Headers)
+                foreach (var header in response.Content == null ? response.Headers : response.Headers.Concat(response.Content.Headers))
                 {
                     originalColor = Console.ForegroundColor;
                     try
@@ -115,21 +115,6 @@ namespace ARMClient
                     }
                 }
 
-                foreach (var header in response.Headers)
-                {
-                    originalColor = Console.ForegroundColor;
-                    try
-                    {
-                        Console.ForegroundColor = headerNameColor;
-                        Console.Write("{0}: ", header.Key);
-                        Console.ForegroundColor = headerValueColor;
-                        Console.WriteLine(String.Join("; ", header.Value));
-                    }
-                    finally
-                    {
-                        Console.ForegroundColor = originalColor;
-                    }
-                }
                 Console.WriteLine();
             }
 

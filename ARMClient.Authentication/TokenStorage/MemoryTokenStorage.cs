@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using ARMClient.Authentication.Contracts;
-using Microsoft.IdentityModel.Clients.ActiveDirectory;
+﻿using ARMClient.Authentication.Contracts;
 
 namespace ARMClient.Authentication.TokenStorage
 {

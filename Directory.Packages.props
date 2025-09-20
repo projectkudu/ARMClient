@@ -3,6 +3,7 @@
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
   </PropertyGroup>
   <ItemGroup Label="Package Versions used by this repository">
+    <PackageVersion Include="Azure.Identity" Version="1.16.0" />
     <PackageVersion Include="Brotli.NET" Version="2.1.1" />
     <PackageVersion Include="Microsoft.AspNet.WebApi.Client" Version="5.2.2" />
     <PackageVersion Include="Microsoft.IdentityModel.Clients.ActiveDirectory" Version="2.28.0" />
@@ -14,7 +15,7 @@
     <PackageVersion Include="System.Net.Http.Formatting.Extension" Version="5.2.3" />
     <PackageVersion Include="System.Net.Http.WinHttpHandler" Version="5.0.0" />
     <PackageVersion Include="System.Numerics.Vectors" Version="4.5.0" />
-    <PackageVersion Include="System.Runtime.CompilerServices.Unsafe" Version="4.5.3" />
+    <PackageVersion Include="System.Runtime.CompilerServices.Unsafe" Version="6.0.0" />
     <PackageVersion Include="System.Runtime.InteropServices.RuntimeInformation" Version="4.3.0" />
   </ItemGroup>
 </Project>

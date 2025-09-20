@@ -3,14 +3,14 @@
         <OutputType>Library</OutputType>
         <RootNamespace>ARMClient.Authentication</RootNamespace>
         <AssemblyName>ARMClient.Authentication</AssemblyName>
-        <TargetFramework>net461</TargetFramework>
+        <TargetFramework>net472</TargetFramework>
         <NoWarn>$(NoWarn);NU1507</NoWarn>
+        <LangVersion>Latest</LangVersion>
     </PropertyGroup>
     <ItemGroup>
+        <PackageReference Include="Azure.Identity" />
         <PackageReference Include="Brotli.NET" />
-        <PackageReference Include="Microsoft.IdentityModel.Clients.ActiveDirectory" />
         <PackageReference Include="Newtonsoft.Json" />
-        <PackageReference Include="System.IdentityModel.Tokens.Jwt" />
         <PackageReference Include="System.Net.Http" />
         <PackageReference Include="System.Net.Http.Formatting.Extension" />
         <PackageReference Include="System.Runtime.InteropServices.RuntimeInformation" />

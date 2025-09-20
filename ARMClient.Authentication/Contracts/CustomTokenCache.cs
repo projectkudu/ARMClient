@@ -1,13 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using Microsoft.IdentityModel.Clients.ActiveDirectory;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
 namespace ARMClient.Authentication.Contracts
 {
-    public class CustomTokenCache : TokenCache
+    public class CustomTokenCache
     {
         private Dictionary<string, TokenCacheInfo> _caches;
 
@@ -22,6 +21,10 @@ namespace ARMClient.Authentication.Contracts
                 _caches = JsonConvert.DeserializeObject<Dictionary<string, TokenCacheInfo>>(state);
             }
         }
+
+        public int Count => _caches.Count;
+
+        public void Clear() => _caches.Clear();
 
         public IEnumerable<TokenCacheInfo> GetValues(string resource)
         {
@@ -46,6 +49,11 @@ namespace ARMClient.Authentication.Contracts
         public void Add(TokenCacheInfo cacheInfo)
         {
             _caches[GetKey(cacheInfo.TenantId, cacheInfo.Resource)] = cacheInfo;
+        }
+
+        public bool Remove(TokenCacheInfo cacheInfo)
+        {
+            return _caches.Remove(GetKey(cacheInfo.TenantId, cacheInfo.Resource));
         }
 
         public void Clone(CustomTokenCache tokenCache)

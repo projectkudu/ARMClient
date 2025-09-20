@@ -7,6 +7,7 @@ using System.Net.Http;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using ARMClient.Authentication;
@@ -19,8 +20,7 @@ namespace ARMClient
 {
     class Program
     {
-        [STAThread]
-        static int Main(string[] args)
+        static async Task<int> Main(string[] args)
         {
             // ensure Tls12
             if ((ServicePointManager.SecurityProtocol & SecurityProtocolType.Tls12) != SecurityProtocolType.Tls12)
@@ -47,15 +47,17 @@ namespace ARMClient
                         _parameters.ThrowIfUnknown();
 
                         persistentAuthHelper.SetAzureEnvironment(!string.IsNullOrEmpty(env) ? env : Utils.GetDefaultEnv());
-                        persistentAuthHelper.AcquireTokens().Wait();
+                        await persistentAuthHelper.AcquireTokens();
                         return 0;
                     }
                     else if (String.Equals(verb, "azlogin", StringComparison.OrdinalIgnoreCase))
                     {
                         _parameters.ThrowIfUnknown();
 
-                        persistentAuthHelper.SetAzureEnvironment(Constants.ARMProdEnv);
-                        persistentAuthHelper.AzLogin().Wait();
+                        var cloudEnv = AzAuthHelper.GetEnvironment();
+
+                        persistentAuthHelper.SetAzureEnvironment(cloudEnv.endpoints.activeDirectory);
+                        await persistentAuthHelper.AzLogin();
                         return 0;
                     }
                     else if (String.Equals(verb, "listcache", StringComparison.OrdinalIgnoreCase))
@@ -72,6 +74,7 @@ namespace ARMClient
                     else if (String.Equals(verb, "clearcache", StringComparison.OrdinalIgnoreCase))
                     {
                         _parameters.ThrowIfUnknown();
+                        DefaultAzureCredentialHelper.ClearTokenCache();
                         persistentAuthHelper.ClearTokenCache();
                         return 0;
                     }
@@ -107,7 +110,7 @@ namespace ARMClient
                             // https://graph.windows.net (no trailing /)
                             // https://management.core.windows.net/
                             _parameters.ThrowIfUnknown();
-                            cacheInfo = persistentAuthHelper.GetTokenByResource(tenantId).Result;
+                            cacheInfo = await persistentAuthHelper.GetTokenByResource(tenantId);
                         }
                         else
                         {
@@ -118,14 +121,19 @@ namespace ARMClient
                             }
 
                             _parameters.ThrowIfUnknown();
-                            cacheInfo = persistentAuthHelper.GetToken(tenantId, resource).Result;
+                            cacheInfo = await persistentAuthHelper.GetToken(tenantId, resource);
                         }
 
                         var bearer = cacheInfo.CreateAuthorizationHeader();
-                        Clipboard.SetText(cacheInfo.AccessToken);
                         DumpClaims(cacheInfo.AccessToken);
                         Console.WriteLine();
+
+                        var thread = new Thread(() => Clipboard.SetText(cacheInfo.AccessToken));
+                        thread.SetApartmentState(ApartmentState.STA);
+                        thread.Start();
+                        thread.Join();
                         Console.WriteLine("Token copied to clipboard successfully.");
+
                         return 0;
                     }
                     else if (String.Equals(verb, "spn", StringComparison.OrdinalIgnoreCase))
@@ -185,20 +193,6 @@ namespace ARMClient
                             persistentAuthHelper.GetTokenBySpn(tenantId, appId, appKey, resource).Result;
                         return 0;
                     }
-                    else if (String.Equals(verb, "upn", StringComparison.OrdinalIgnoreCase))
-                    {
-                        var username = _parameters.Get(1, keyName: "username");
-                        var password = _parameters.Get(2, keyName: "password", requires: false);
-                        if (password == null)
-                        {
-                            password = PromptForPassword("password");
-                        }
-                        _parameters.ThrowIfUnknown();
-
-                        persistentAuthHelper.SetAzureEnvironment(Utils.GetDefaultEnv());
-                        var cacheInfo = persistentAuthHelper.GetTokenByUpn(username, password).Result;
-                        return 0;
-                    }
                     else if (String.Equals(verb, "get", StringComparison.OrdinalIgnoreCase)
                         || String.Equals(verb, "delete", StringComparison.OrdinalIgnoreCase)
                         || String.Equals(verb, "put", StringComparison.OrdinalIgnoreCase)
@@ -223,19 +217,19 @@ namespace ARMClient
                         if (!String.IsNullOrEmpty(accessToken))
                         {
                             persistentAuthHelper.SetAzureEnvironment(env);
-                            return HttpInvoke(uri, new TokenCacheInfo { AccessToken = accessToken }, verb, verbose, content, headers, http2).Result;
+                            return await HttpInvoke(uri, new TokenCacheInfo { AccessToken = accessToken }, verb, verbose, content, headers, http2);
                         }
 
                         if (!persistentAuthHelper.IsCacheValid() || !string.Equals(env, persistentAuthHelper.ARMConfiguration.AzureEnvironment, StringComparison.OrdinalIgnoreCase))
                         {
                             persistentAuthHelper.SetAzureEnvironment(env);
-                            persistentAuthHelper.AcquireTokens().Wait();
+                            await persistentAuthHelper.AcquireTokens();
                         }
 
                         var resource = GetResource(uri, persistentAuthHelper.ARMConfiguration);
                         var subscriptionId = GetTenantOrSubscription(uri);
-                        var cacheInfo = persistentAuthHelper.GetToken(subscriptionId, resource).Result ?? persistentAuthHelper.GetTokenByResource(resource).Result;
-                        return HttpInvoke(uri, cacheInfo, verb, verbose, content, headers, http2).Result;
+                        var cacheInfo = await persistentAuthHelper.GetToken(subscriptionId, resource) ?? await persistentAuthHelper.GetTokenByResource(resource);
+                        return await HttpInvoke(uri, cacheInfo, verb, verbose, content, headers, http2);
                     }
                     else
                     {
@@ -632,6 +626,11 @@ namespace ARMClient
             try
             {
                 var paths = uri.AbsolutePath.Split(new[] { '/', '?' }, StringSplitOptions.RemoveEmptyEntries);
+                if (Utils.IsMSGraphApi(uri))
+                {
+                    return null;
+                }
+
                 if (Utils.IsGraphApi(uri))
                 {
                     return paths[0];
@@ -665,24 +664,32 @@ namespace ARMClient
 
         static string GetResource(Uri uri, ARMConfiguration configuration)
         {
-            try
+            if (Utils.IsMSGraphApi(uri))
             {
-                if (Utils.IsGraphApi(uri))
-                {
-                    return configuration.AADGraphUrl;
-                }
+                return configuration.AADMSGraphUrl;
+            }
 
-                if (Utils.IsKeyVault(uri))
-                {
-                    return configuration.KeyVaultResource;
-                }
+            if (Utils.IsGraphApi(uri))
+            {
+                return configuration.AADGraphUrl;
+            }
 
+            if (Utils.IsKeyVault(uri))
+            {
+                return configuration.KeyVaultResource;
+            }
+
+            if (Utils.IsScm(uri))
+            {
+                return configuration.AppServiceUrl;
+            }
+
+            if (Utils.IsARM(uri))
+            {
                 return configuration.ARMResource;
             }
-            catch (Exception ex)
-            {
-                throw new InvalidOperationException(String.Format("Invalid url {0}!", uri), ex);
-            }
+
+            throw new InvalidOperationException($"Invalid url {uri}!");
         }
     }
 }

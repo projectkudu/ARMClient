@@ -1,6 +1,4 @@
-﻿using System.Collections.Generic;
-using ARMClient.Authentication.Contracts;
-using Microsoft.IdentityModel.Clients.ActiveDirectory;
+﻿using ARMClient.Authentication.Contracts;
 
 namespace ARMClient.Authentication.TokenStorage
 {
@@ -8,10 +6,8 @@ namespace ARMClient.Authentication.TokenStorage
     {
         CustomTokenCache GetCache();
         void SaveCache(CustomTokenCache tokenCache);
-
         TokenCacheInfo GetRecentToken(string resource);
         void SaveRecentToken(TokenCacheInfo cacheInfo, string resource);
-
         bool IsCacheValid();
         void ClearCache();
     }

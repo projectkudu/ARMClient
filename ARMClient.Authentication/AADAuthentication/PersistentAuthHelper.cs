@@ -1,5 +1,4 @@
-﻿using ARMClient.Authentication.Contracts;
-using ARMClient.Authentication.EnvironmentStorage;
+﻿using ARMClient.Authentication.EnvironmentStorage;
 using ARMClient.Authentication.TenantStorage;
 using ARMClient.Authentication.TokenStorage;
 

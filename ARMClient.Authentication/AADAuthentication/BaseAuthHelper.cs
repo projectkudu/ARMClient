@@ -1,22 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Security.Cryptography.X509Certificates;
-using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 using ARMClient.Authentication.Contracts;
 using ARMClient.Authentication.EnvironmentStorage;
 using ARMClient.Authentication.TenantStorage;
 using ARMClient.Authentication.TokenStorage;
 using ARMClient.Authentication.Utilities;
-using Microsoft.IdentityModel.Clients.ActiveDirectory;
-using Microsoft.Win32.SafeHandles;
-using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
 namespace ARMClient.Authentication.AADAuthentication
@@ -44,8 +37,16 @@ namespace ARMClient.Authentication.AADAuthentication
 
         public void SetAzureEnvironment(string env)
         {
-            this.EnvironmentStorage.SaveEnvironment(env);
-            _configuration = new ARMConfiguration(env);
+            if (Uri.TryCreate(env, UriKind.Absolute, out var aadLoginUrl))
+            {
+                _configuration = new ARMConfiguration(aadLoginUrl);
+            }
+            else
+            {
+                _configuration = new ARMConfiguration(env);
+            }
+
+            this.EnvironmentStorage.SaveEnvironment(_configuration.AzureEnvironment);
         }
 
         public async Task AcquireTokens()
@@ -68,65 +69,67 @@ namespace ARMClient.Authentication.AADAuthentication
             this.TokenStorage.ClearCache();
             this.TenantStorage.ClearCache();
 
-            var tokens = GetAzLoginTokens();
-
             var tokenCache = new CustomTokenCache();
             var tenantCache = this.TenantStorage.GetCache();
             TokenCacheInfo recentInfo = null;
-            foreach (var token in tokens)
+            var token = AzAuthHelper.GetToken(ARMConfiguration.Current.ARMResource);
+            var result = new TokenCacheInfo(token.accessToken);
+            tokenCache.Add(result);
+
+            foreach (var resource in new[] { ARMConfiguration.Current.AppServiceUrl, ARMConfiguration.Current.AADMSGraphUrl, ARMConfiguration.Current.KeyVaultResource })
             {
-                var result = token.ToTokenCacheInfo();
-                Guid unused;
-                if (!Guid.TryParse(result.TenantId, out unused))
-                {
-                    continue;
-                }
-
-                tokenCache.Add(result);
-
-                var tenantId = result.TenantId;
-                var info = new TenantCacheInfo
-                {
-                    tenantId = tenantId,
-                    displayName = "unknown",
-                    domain = tenantId
-                };
-
-                Utils.Trace.WriteLine(string.Format("User: {0}, Tenant: {1}", result.DisplayableId, tenantId));
                 try
                 {
-                    var subscriptions = await GetSubscriptions(result);
-                    Utils.Trace.WriteLine(string.Format("\tThere are {0} subscriptions", subscriptions.Length));
-
-                    info.subscriptions = subscriptions.Select(subscription => new SubscriptionCacheInfo
-                    {
-                        subscriptionId = subscription.subscriptionId,
-                        displayName = subscription.displayName
-                    }).ToArray();
-
-                    if (recentInfo == null || info.subscriptions.Length > 0)
-                    {
-                        recentInfo = result;
-                    }
-
-                    foreach (var subscription in subscriptions)
-                    {
-                        Utils.Trace.WriteLine(string.Format("\tSubscription {0} ({1})", subscription.subscriptionId, subscription.displayName));
-                    }
+                    tokenCache.Add(new TokenCacheInfo(AzAuthHelper.GetToken(resource).accessToken));
                 }
-                catch (Exception ex)
+                catch (Exception)
                 {
-                    Utils.Trace.WriteLine(string.Format("\t{0}!", ex.Message));
+                    // best effort
                 }
-
-                tenantCache[tenantId] = info;
-                if (!String.IsNullOrEmpty(info.domain) && info.domain != "unknown")
-                {
-                    tenantCache[info.domain] = info;
-                }
-
-                Utils.Trace.WriteLine(string.Empty);
             }
+
+            var tenantId = result.TenantId;
+            var info = new TenantCacheInfo
+            {
+                tenantId = tenantId,
+                displayName = "unknown",
+                domain = tenantId
+            };
+
+            Utils.Trace.WriteLine(string.Format("User: {0}, Tenant: {1}", result.DisplayableId, tenantId));
+            try
+            {
+                var subscriptions = await GetSubscriptions(result);
+                Utils.Trace.WriteLine(string.Format("\tThere are {0} subscriptions", subscriptions.Length));
+
+                info.subscriptions = subscriptions.Select(subscription => new SubscriptionCacheInfo
+                {
+                    subscriptionId = subscription.subscriptionId,
+                    displayName = subscription.displayName
+                }).ToArray();
+
+                if (recentInfo == null || info.subscriptions.Length > 0)
+                {
+                    recentInfo = result;
+                }
+
+                foreach (var subscription in subscriptions)
+                {
+                    Utils.Trace.WriteLine(string.Format("\tSubscription {0} ({1})", subscription.subscriptionId, subscription.displayName));
+                }
+            }
+            catch (Exception ex)
+            {
+                Utils.Trace.WriteLine(string.Format("\t{0}!", ex.Message));
+            }
+
+            tenantCache[tenantId] = info;
+            if (!String.IsNullOrEmpty(info.domain) && info.domain != "unknown")
+            {
+                tenantCache[info.domain] = info;
+            }
+
+            Utils.Trace.WriteLine(string.Empty);
 
             if (recentInfo != null)
             {
@@ -162,110 +165,20 @@ namespace ARMClient.Authentication.AADAuthentication
             return cacheInfo;
         }
 
-        private AzAccessToken[] GetAzLoginTokens()
-        {
-            var azCmd = Environment.ExpandEnvironmentVariables(@"%ProgramFiles(x86)%\Microsoft SDKs\Azure\CLI2\wbin\az.cmd");
-            if (!File.Exists(azCmd))
-            {
-                throw new InvalidOperationException("Azure cli is required.  Please download and install from https://aka.ms/InstallAzureCliWindows");
-            }
-
-            var accessTokensFile = Environment.ExpandEnvironmentVariables(@"%USERPROFILE%\.azure\accessTokens.json");
-            var backupContent = File.Exists(accessTokensFile) ? File.ReadAllText(accessTokensFile) : null;
-            try
-            {
-                if (File.Exists(accessTokensFile))
-                {
-                    File.Delete(accessTokensFile);
-                }
-
-                var processInfo = new ProcessStartInfo(azCmd, "login");
-                processInfo.CreateNoWindow = true;
-                processInfo.UseShellExecute = false;
-                processInfo.RedirectStandardError = true;
-                processInfo.RedirectStandardOutput = true;
-
-                // start
-                var process = Process.Start(processInfo);
-                var processName = process.ProcessName;
-                var processId = process.Id;
-
-                // hook process event
-                var processEvent = new ManualResetEvent(true);
-                processEvent.SafeWaitHandle = new SafeWaitHandle(process.Handle, false);
-
-                var hasOutput = false;
-                var stdOutput = new StringBuilder();
-                DataReceivedEventHandler stdHandler = (object sender, DataReceivedEventArgs e) =>
-                {
-                    if (e.Data != null)
-                    {
-                        if (!hasOutput)
-                        {
-                            Console.WriteLine();
-                            hasOutput = true;
-                        }
-
-                        if (e.Data.IndexOf("[") >= 0 || stdOutput.Length > 0)
-                        {
-                            stdOutput.Append(e.Data);
-                        }
-                        else
-                        {
-                            Console.Write(e.Data);
-                        }
-                    }
-                };
-
-                // hoook stdout and stderr
-                process.OutputDataReceived += stdHandler;
-                process.BeginOutputReadLine();
-                process.ErrorDataReceived += stdHandler;
-                process.BeginErrorReadLine();
-
-                // wait for ready
-                Console.Write("Executing az login.");
-                while (!processEvent.WaitOne(2000) && !hasOutput)
-                {
-                    Console.Write(".");
-                }
-
-                processEvent.WaitOne();
-                if (process.ExitCode != 0)
-                {
-                    // if success, it contains the list of subscriptions
-                    Console.WriteLine(stdOutput);
-
-                    throw new InvalidOperationException("Process exit with " + process.ExitCode);
-                }
-
-                return JsonConvert.DeserializeObject<AzAccessToken[]>(File.ReadAllText(accessTokensFile));
-            }
-            finally
-            {
-                if (backupContent != null)
-                {
-                    File.WriteAllText(accessTokensFile, backupContent);
-                }
-                else
-                {
-                    File.Delete(accessTokensFile);
-                }
-            }
-        }
-
         public async Task<TokenCacheInfo> GetToken(string id, string resource)
         {
             try
             {
                 return await GetTokenInternal(id, resource);
             }
-            catch (AdalServiceException ex)
+            catch (Exception ex)
             {
-                if (ex.Message.IndexOf(" is expired") < 0)
+                if (ex.Message.IndexOf("expir") < 0)
                 {
                     throw;
                 }
+
+                Console.WriteLine(ex.Message);
             }
 
             await AcquireTokens();
@@ -313,7 +226,7 @@ namespace ARMClient.Authentication.AADAuthentication
 
             if (string.IsNullOrEmpty(resource))
             {
-                resource = id == tenantId ? ARMConfiguration.AADGraphUrl : ARMConfiguration.ARMResource;
+                resource = id == tenantId ? ARMConfiguration.AADMSGraphUrl : ARMConfiguration.ARMResource;
             }
 
             var tokenCache = this.TokenStorage.GetCache();
@@ -391,7 +304,7 @@ namespace ARMClient.Authentication.AADAuthentication
             this.TenantStorage.ClearCache();
 
             var tokenCache = new CustomTokenCache();
-            var cacheInfo = GetAuthorizationResultBySpn(tokenCache, tenantId, appId, appKey, resource ?? ARMConfiguration.ARMResource);
+            var cacheInfo = await GetAuthorizationResultBySpn(tokenCache, tenantId, appId, appKey, resource ?? ARMConfiguration.ARMResource);
 
             var tenantCache = await GetTokenForTenants(tokenCache, cacheInfo, appId: appId, appKey: appKey);
 
@@ -422,22 +335,6 @@ namespace ARMClient.Authentication.AADAuthentication
             return cacheInfo;
         }
 
-        public async Task<TokenCacheInfo> GetTokenByUpn(string username, string password)
-        {
-            this.TokenStorage.ClearCache();
-            this.TenantStorage.ClearCache();
-
-            var tokenCache = new CustomTokenCache();
-            var cacheInfo = GetAuthorizationResultByUpn(tokenCache, "common", username, password, ARMConfiguration.ARMResource);
-
-            var tenantCache = await GetTokenForTenants(tokenCache, cacheInfo, username: username, password: password);
-
-            this.TokenStorage.SaveCache(tokenCache);
-            this.TenantStorage.SaveCache(tenantCache);
-
-            return cacheInfo;
-        }
-
         protected async Task<TokenCacheInfo> GetRecentToken(string resource)
         {
             TokenCacheInfo cacheInfo = this.TokenStorage.GetRecentToken(resource);
@@ -454,20 +351,17 @@ namespace ARMClient.Authentication.AADAuthentication
 
         protected async Task<TokenCacheInfo> RefreshToken(CustomTokenCache tokenCache, TokenCacheInfo cacheInfo)
         {
-            if (!String.IsNullOrEmpty(cacheInfo.RefreshToken))
-            {
-                return await GetAuthorizationResultByRefreshToken(tokenCache, cacheInfo);
-            }
-            else if (!String.IsNullOrEmpty(cacheInfo.AppId) && cacheInfo.AppKey == "_certificate_")
+            if (!String.IsNullOrEmpty(cacheInfo.AppId) && cacheInfo.AppKey == "_certificate_")
             {
                 throw new InvalidOperationException("Unable to refresh expired token!  Try login with certificate again.");
             }
             else if (!String.IsNullOrEmpty(cacheInfo.AppId) && !String.IsNullOrEmpty(cacheInfo.AppKey))
             {
-                return GetAuthorizationResultBySpn(tokenCache, cacheInfo.TenantId, cacheInfo.AppId, cacheInfo.AppKey, cacheInfo.Resource);
+                return await GetAuthorizationResultBySpn(tokenCache, cacheInfo.TenantId, cacheInfo.AppId, cacheInfo.AppKey, cacheInfo.Resource);
             }
 
-            throw new NotImplementedException();
+            tokenCache.Remove(cacheInfo);
+            return await GetAuthorizationResult(tokenCache, cacheInfo.TenantId, null, cacheInfo.Resource);
         }
 
         public bool IsCacheValid()
@@ -514,28 +408,7 @@ namespace ARMClient.Authentication.AADAuthentication
             }
         }
 
-        protected async Task<TokenCacheInfo> GetAuthorizationResultByRefreshToken(CustomTokenCache tokenCache, TokenCacheInfo cacheInfo)
-        {
-            var authority = String.Format("{0}/{1}", ARMConfiguration.AADLoginUrl, cacheInfo.TenantId);
-            var context = new AuthenticationContext(
-                authority: authority,
-                validateAuthority: true,
-                tokenCache: tokenCache);
-
-            AuthenticationResult result = await context.AcquireTokenByRefreshTokenAsync(
-                    refreshToken: cacheInfo.RefreshToken,
-                    clientId: !string.IsNullOrEmpty(cacheInfo.ClientId) ? cacheInfo.ClientId : Constants.AADClientId,
-                    resource: cacheInfo.Resource);
-
-            var ret = new TokenCacheInfo(cacheInfo.Resource, result);
-            ret.TenantId = cacheInfo.TenantId;
-            ret.DisplayableId = cacheInfo.DisplayableId;
-            ret.ClientId = cacheInfo.ClientId;
-            tokenCache.Add(ret);
-            return ret;
-        }
-
-        protected Task<TokenCacheInfo> GetAuthorizationResult(CustomTokenCache tokenCache, string tenantId, string user = null, string resource = null)
+        protected async Task<TokenCacheInfo> GetAuthorizationResult(CustomTokenCache tokenCache, string tenantId, string user = null, string resource = null)
         {
             var tcs = new TaskCompletionSource<TokenCacheInfo>();
 
@@ -544,75 +417,16 @@ namespace ARMClient.Authentication.AADAuthentication
             TokenCacheInfo found;
             if (tokenCache.TryGetValue(tenantId, resource, out found))
             {
-                tcs.SetResult(found);
-                return tcs.Task;
+                return found;
             }
 
-            var thread = new Thread(() =>
-            {
-                try
-                {
-                    var authority = String.Format("{0}/{1}", ARMConfiguration.AADLoginUrl, tenantId);
-                    var context = new AuthenticationContext(
-                        authority: authority,
-                        validateAuthority: true,
-                        tokenCache: tokenCache);
-
-                    AuthenticationResult result = null;
-                    if (!string.IsNullOrEmpty(user))
-                    {
-                        try
-                        {
-                            result = context.AcquireToken(
-                                resource: resource,
-                                clientId: Constants.AADClientId,
-                                redirectUri: new Uri(Constants.AADRedirectUri),
-                                promptBehavior: PromptBehavior.Never,
-                                userId: new UserIdentifier(user, UserIdentifierType.OptionalDisplayableId));
-                        }
-                        catch (AdalException adalEx)
-                        {
-                            if (!string.Equals(adalEx.ErrorCode, "interaction_required", StringComparison.OrdinalIgnoreCase)
-                                && adalEx.Message.IndexOf("user_interaction_required") < 0)
-                            {
-                                throw;
-                            }
-
-                            result = context.AcquireToken(
-                                resource: resource,
-                                clientId: Constants.AADClientId,
-                                redirectUri: new Uri(Constants.AADRedirectUri),
-                                promptBehavior: PromptBehavior.Auto,
-                                userId: new UserIdentifier(user, UserIdentifierType.OptionalDisplayableId));
-                        }
-                    }
-                    else
-                    {
-                        result = context.AcquireToken(
-                            resource: resource,
-                            clientId: Constants.AADClientId,
-                            redirectUri: new Uri(Constants.AADRedirectUri),
-                            promptBehavior: PromptBehavior.Always);
-                    }
-
-                    var cacheInfo = new TokenCacheInfo(resource, result);
-                    tokenCache.Add(cacheInfo);
-                    tcs.TrySetResult(cacheInfo);
-                }
-                catch (Exception ex)
-                {
-                    tcs.TrySetException(ex);
-                }
-            });
-
-            thread.SetApartmentState(ApartmentState.STA);
-            thread.Name = "AcquireTokenThread";
-            thread.Start();
-
-            return tcs.Task;
+            var result = await MsalAuthHelper.GetUserTokenAsync(authorityHost: ARMConfiguration.AADLoginUrl, tenantId: tenantId, scope: resource);
+            var cacheInfo = new TokenCacheInfo(result.AccessToken);
+            tokenCache.Add(cacheInfo);
+            return cacheInfo;
         }
 
-        protected TokenCacheInfo GetAuthorizationResultBySpn(CustomTokenCache tokenCache, string tenantId, string appId, string appKey, string resource)
+        protected async Task<TokenCacheInfo> GetAuthorizationResultBySpn(CustomTokenCache tokenCache, string tenantId, string appId, string appKey, string resource)
         {
             TokenCacheInfo found;
             if (tokenCache.TryGetValue(tenantId, resource, out found))
@@ -620,15 +434,8 @@ namespace ARMClient.Authentication.AADAuthentication
                 return found;
             }
 
-            var authority = String.Format("{0}/{1}", ARMConfiguration.AADLoginUrl, tenantId);
-            var context = new AuthenticationContext(
-                authority: authority,
-                validateAuthority: true,
-                tokenCache: tokenCache);
-            var credential = new ClientCredential(appId, appKey);
-            var result = context.AcquireToken(resource, credential);
-
-            var cacheInfo = new TokenCacheInfo(tenantId, appId, appKey, resource, result);
+            var result = await MsalAuthHelper.GetClientSecretTokenAsync(authorityHost: ARMConfiguration.AADLoginUrl, tenantId: tenantId, scope: resource, clientId: appId, clientSecret: appKey);
+            var cacheInfo = new TokenCacheInfo(result.AccessToken) { AppKey = appKey };
             tokenCache.Add(cacheInfo);
             return cacheInfo;
         }
@@ -641,38 +448,14 @@ namespace ARMClient.Authentication.AADAuthentication
                 return found;
             }
 
-            var helper = new JwtHelper();
-            var tokenEndpoint = string.Format("{0}/{1}/oauth2/token", ARMConfiguration.AADLoginUrl, tenantId);
-            var token = await helper.AcquireTokenByX509(tenantId, appId, certificate, resource, tokenEndpoint);
-
-            var cacheInfo = new TokenCacheInfo(tenantId, appId, "_certificate_", resource, token);
-            tokenCache.Add(cacheInfo);
-            return cacheInfo;
-        }
-
-        protected TokenCacheInfo GetAuthorizationResultByUpn(CustomTokenCache tokenCache, string tenantId, string username, string password, string resource)
-        {
-            TokenCacheInfo found;
-            if (tokenCache.TryGetValue(tenantId, resource, out found))
-            {
-                return found;
-            }
-
-            var authority = String.Format("{0}/{1}", ARMConfiguration.AADLoginUrl, tenantId);
-            var context = new AuthenticationContext(
-                authority: authority,
-                validateAuthority: true,
-                tokenCache: tokenCache);
-            var credential = new UserCredential(username, password);
-            var result = context.AcquireToken(resource, Constants.AADClientId, credential);
-
-            var cacheInfo = new TokenCacheInfo(resource, result);
+            var result = await MsalAuthHelper.GetClientCertificateTokenAsync(authorityHost: ARMConfiguration.AADLoginUrl, tenantId: tenantId, scope: resource, clientId: appId, clientCertificate: certificate);
+            var cacheInfo = new TokenCacheInfo(result.AccessToken) { AppKey = "_certificate_" };
             tokenCache.Add(cacheInfo);
             return cacheInfo;
         }
 
         protected async Task<Dictionary<string, TenantCacheInfo>> GetTokenForTenants(CustomTokenCache tokenCache, TokenCacheInfo cacheInfo,
-            string appId = null, string appKey = null, string username = null, string password = null)
+            string appId = null, string appKey = null)
         {
             var recentInfo = cacheInfo;
             var tenantIds = await GetTenantIds(cacheInfo);
@@ -698,11 +481,7 @@ namespace ARMClient.Authentication.AADAuthentication
                 {
                     if (!String.IsNullOrEmpty(appId) && !String.IsNullOrEmpty(appKey))
                     {
-                        result = GetAuthorizationResultBySpn(tokenCache, tenantId: tenantId, appId: appId, appKey: appKey, resource: ARMConfiguration.ARMResource);
-                    }
-                    else if (!String.IsNullOrEmpty(username) && !String.IsNullOrEmpty(password))
-                    {
-                        result = GetAuthorizationResultByUpn(tokenCache, tenantId: tenantId, username: username, password: password, resource: ARMConfiguration.ARMResource);
+                        result = await GetAuthorizationResultBySpn(tokenCache, tenantId: tenantId, appId: appId, appKey: appKey, resource: ARMConfiguration.ARMResource);
                     }
                     else
                     {
@@ -725,22 +504,18 @@ namespace ARMClient.Authentication.AADAuthentication
                     }
                     else if (!String.IsNullOrEmpty(appId) && !String.IsNullOrEmpty(appKey))
                     {
-                        aadToken = GetAuthorizationResultBySpn(tokenCache, tenantId: tenantId, appId: appId, appKey: appKey, resource: ARMConfiguration.AADGraphUrl);
-                    }
-                    else if (!String.IsNullOrEmpty(username) && !String.IsNullOrEmpty(password))
-                    {
-                        aadToken = GetAuthorizationResultByUpn(tokenCache, tenantId: tenantId, username: username, password: password, resource: ARMConfiguration.AADGraphUrl);
+                        aadToken = await GetAuthorizationResultBySpn(tokenCache, tenantId: tenantId, appId: appId, appKey: appKey, resource: ARMConfiguration.AADMSGraphUrl);
                     }
                     else
                     {
-                        aadToken = await GetAuthorizationResult(tokenCache, tenantId: tenantId, user: cacheInfo.DisplayableId, resource: ARMConfiguration.AADGraphUrl);
+                        aadToken = await GetAuthorizationResult(tokenCache, tenantId: tenantId, user: cacheInfo.DisplayableId, resource: ARMConfiguration.AADMSGraphUrl);
                     }
 
                     if (aadToken != null)
                     {
                         var details = await GetTenantDetail(aadToken, tenantId);
                         info.displayName = details.displayName;
-                        info.domain = details.verifiedDomains.First(d => d.@default).name;
+                        info.domain = details.verifiedDomains.First(d => d.isDefault).name;
 
                         if (!String.IsNullOrEmpty(appId) && !String.IsNullOrEmpty(appKey))
                         {
@@ -837,14 +612,14 @@ namespace ARMClient.Authentication.AADAuthentication
             {
                 return new TenantDetails
                 {
-                    objectId = tenantId,
+                    id = tenantId,
                     displayName = "Infrastructure",
                     verifiedDomains = new[]
                     {
                         new VerifiedDomain
                         {
                             name = "live.com",
-                            @default = true
+                            isDefault = true
                         }
                     }
                 };
@@ -855,7 +630,7 @@ namespace ARMClient.Authentication.AADAuthentication
                 client.DefaultRequestHeaders.Add("Authorization", cacheInfo.CreateAuthorizationHeader());
                 client.DefaultRequestHeaders.Add("User-Agent", Constants.UserAgent.Value);
 
-                var url = string.Format("{0}/{1}/tenantDetails?api-version={2}", ARMConfiguration.AADGraphUrl, tenantId, Constants.AADGraphApiVersion);
+                var url = $"{ARMConfiguration.Current.AADMSGraphUrl}/v1.0/organization";
                 using (var response = await client.GetAsync(url))
                 {
                     if (response.IsSuccessStatusCode)
@@ -865,7 +640,7 @@ namespace ARMClient.Authentication.AADAuthentication
                     }
 
                     var content = await response.Content.ReadAsStringAsync();
-                    if (content.StartsWith("{"))
+                    if (!Utils.GetDefaultVerbose() && content.StartsWith("{"))
                     {
                         var error = (JObject)JObject.Parse(content)["odata.error"];
                         if (error != null)
@@ -874,7 +649,7 @@ namespace ARMClient.Authentication.AADAuthentication
                         }
                     }
 
-                    throw new InvalidOperationException(String.Format("GetTenantDetail {0}, {1}", response.StatusCode, await response.Content.ReadAsStringAsync()));
+                    throw new InvalidOperationException($"GetTenantDetail {url}, {response.StatusCode}, {content}");
                 }
             }
         }
@@ -896,7 +671,7 @@ namespace ARMClient.Authentication.AADAuthentication
                     }
 
                     var content = await response.Content.ReadAsStringAsync();
-                    if (content.StartsWith("{"))
+                    if (!Utils.GetDefaultVerbose() && content.StartsWith("{"))
                     {
                         var error = (JObject)JObject.Parse(content)["error"];
                         if (error != null)
@@ -905,10 +680,9 @@ namespace ARMClient.Authentication.AADAuthentication
                         }
                     }
 
-                    throw new InvalidOperationException(String.Format("GetSubscriptions {0}, {1}", response.StatusCode, await response.Content.ReadAsStringAsync()));
+                    throw new InvalidOperationException($"GetSubscriptions {url}, {response.StatusCode}, {content}");
                 }
             }
         }
-
     }
 }

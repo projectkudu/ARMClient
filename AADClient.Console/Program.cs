@@ -7,6 +7,7 @@ using System.Net.Http;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using ARMClient.Authentication;
@@ -19,8 +20,7 @@ namespace ARMClient
 {
     class Program
     {
-        [STAThread]
-        static int Main(string[] args)
+        static async Task<int> Main(string[] args)
         {
             Utils.SetTraceListener(new ConsoleTraceListener());
             try
@@ -34,7 +34,7 @@ namespace ARMClient
                     if (String.Equals(verb, "login", StringComparison.OrdinalIgnoreCase))
                     {
                         _parameters.ThrowIfUnknown();
-                        persistentAuthHelper.AcquireTokens().Wait();
+                        await persistentAuthHelper.AcquireTokens();
                         return 0;
                     }
                     else if (String.Equals(verb, "spn", StringComparison.OrdinalIgnoreCase))
@@ -77,13 +77,17 @@ namespace ARMClient
 
                         _parameters.ThrowIfUnknown();
 
-                        var info = certificate != null ?
-                            AADHelper.AcquireTokenByX509(tenantId, appId, certificate, resource).Result :
-                            AADHelper.AcquireTokenBySPN(tenantId, appId, appKey, resource).Result;
-                        Clipboard.SetText(info.access_token);
-                        DumpClaims(info.access_token);
-                        Console.WriteLine();
+                        var cacheInfo = certificate != null 
+                            ? await persistentAuthHelper.GetTokenBySpn(tenantId, appId, certificate, resource) 
+                            : await persistentAuthHelper.GetTokenBySpn(tenantId, appId, appKey, resource);
+                        DumpClaims(cacheInfo.AccessToken);
+
+                        var thread = new Thread(() => Clipboard.SetText(cacheInfo.AccessToken));
+                        thread.SetApartmentState(ApartmentState.STA);
+                        thread.Start();
+                        thread.Join();
                         Console.WriteLine("Token copied to clipboard successfully.");
+
                         return 0;
                     }
                     else if (String.Equals(verb, "get-tenant", StringComparison.OrdinalIgnoreCase))
@@ -555,7 +559,7 @@ namespace ARMClient
                 }
             }
 
-            return new Uri(new Uri(persistentAuthHelper.ARMConfiguration.AADGraphUrl), path);
+            return new Uri(new Uri(persistentAuthHelper.ARMConfiguration.AADMSGraphUrl), path);
         }
 
         static void EnsureGuidFormat(string parameter)
@@ -880,6 +884,11 @@ namespace ARMClient
             try
             {
                 var paths = uri.AbsolutePath.Split(new[] { '/', '?' }, StringSplitOptions.RemoveEmptyEntries);
+                if (Utils.IsMSGraphApi(uri))
+                {
+                    return null;
+                }
+
                 if (Utils.IsGraphApi(uri))
                 {
                     return paths[0];
@@ -906,24 +915,32 @@ namespace ARMClient
 
         static string GetResource(Uri uri, ARMConfiguration configuration)
         {
-            try
+            if (Utils.IsMSGraphApi(uri))
             {
-                if (Utils.IsGraphApi(uri))
-                {
-                    return configuration.AADGraphUrl;
-                }
+                return configuration.AADMSGraphUrl;
+            }
 
-                if (Utils.IsKeyVault(uri))
-                {
-                    return configuration.KeyVaultResource;
-                }
+            if (Utils.IsGraphApi(uri))
+            {
+                return configuration.AADGraphUrl;
+            }
 
+            if (Utils.IsKeyVault(uri))
+            {
+                return configuration.KeyVaultResource;
+            }
+
+            if (Utils.IsScm(uri))
+            {
+                return configuration.AppServiceUrl;
+            }
+
+            if (Utils.IsARM(uri))
+            {
                 return configuration.ARMResource;
             }
-            catch (Exception ex)
-            {
-                throw new InvalidOperationException(String.Format("Invalid url {0}!", uri), ex);
-            }
+
+            throw new InvalidOperationException($"Invalid url {uri}!");
         }
     }
 }

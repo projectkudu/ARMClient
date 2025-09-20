@@ -31,7 +31,10 @@ namespace ARMClient.Authentication.Utilities
 
         public static string GetLoginTenant()
         {
-            return Environment.GetEnvironmentVariable("ARMCLIENT_TENANT") ?? Constants.AADCommonTenant;
+            return Environment.GetEnvironmentVariable("ARMCLIENT_TENANT") ??  
+                (string.Equals(Constants.ARMDogfoodEnv, GetDefaultEnv(), StringComparison.OrdinalIgnoreCase) 
+                    ? Constants.AADDogfoodTenant
+                    : Constants.AADCommonTenant);
         }
 
         public static string GetDefaultEnv()
@@ -70,6 +73,11 @@ namespace ARMClient.Authentication.Utilities
             return !string.Equals(Constants.ARMDogfoodEnv, GetDefaultEnv(), StringComparison.OrdinalIgnoreCase) ? null : Environment.GetEnvironmentVariable("ARMCLIENT_STAMPCERT");
         }
 
+        public static string GetDefaultStampSub()
+        {
+            return !string.Equals(Constants.ARMDogfoodEnv, GetDefaultEnv(), StringComparison.OrdinalIgnoreCase) ? null : Environment.GetEnvironmentVariable("ARMCLIENT_STAMPSUB");
+        }
+
         public static void SetTraceListener(TraceListener listener)
         {
             _traceListener = listener;
@@ -92,6 +100,8 @@ namespace ARMClient.Authentication.Utilities
             var bytes = Encoding.UTF8.GetBytes(key.Substring(0, 32));
             return Convert.ToBase64String(bytes);
         }
+
+        public static string EnsureDefaultScope(this string resource) => resource.EndsWith("/.default") ? resource : $"{resource.TrimEnd('/')}/.default";
 
         class DefaultTraceListener : TraceListener
         {
@@ -133,6 +143,12 @@ namespace ARMClient.Authentication.Utilities
                     if (!String.IsNullOrEmpty(stampCert))
                     {
                         client.DefaultRequestHeaders.Add("x-geoproxy-stampcert", stampCert, headers);
+                    }
+
+                    var stampSub = GetDefaultStampSub();
+                    if (!String.IsNullOrEmpty(stampSub))
+                    {
+                        client.DefaultRequestHeaders.Add("x-geoproxy-stampsub", stampSub, headers);
                     }
                 }
 
@@ -285,7 +301,7 @@ namespace ARMClient.Authentication.Utilities
                 }
             }
 
-            return new Uri(new Uri(persistentAuthHelper.ARMConfiguration.AADGraphUrl), path);
+            return new Uri(new Uri(persistentAuthHelper.ARMConfiguration.AADMSGraphUrl), path);
         }
 
         public static bool IsRdfe(Uri uri)
@@ -300,6 +316,12 @@ namespace ARMClient.Authentication.Utilities
             return ARMConfiguration.Current.AADGraphUrl.IndexOf(host, StringComparison.OrdinalIgnoreCase) > 0;
         }
 
+        public static bool IsMSGraphApi(Uri uri)
+        {
+            var host = uri.Host;
+            return ARMConfiguration.Current.AADMSGraphUrl.IndexOf(host, StringComparison.OrdinalIgnoreCase) > 0;
+        }
+
         public static bool IsARM(Uri uri)
         {
             var host = uri.Host;
@@ -310,6 +332,12 @@ namespace ARMClient.Authentication.Utilities
         {
             var host = uri.Host;
             return host.IndexOf(new Uri(ARMConfiguration.Current.KeyVaultResource).Host, StringComparison.OrdinalIgnoreCase) > 0;
+        }
+
+        public static bool IsScm(Uri uri)
+        {
+            var host = uri.Host;
+            return host.IndexOf(".scm.", StringComparison.OrdinalIgnoreCase) > 0;
         }
 
         public static async Task<string> ReadAndDecodeAsStringAsync(this HttpContent content)
