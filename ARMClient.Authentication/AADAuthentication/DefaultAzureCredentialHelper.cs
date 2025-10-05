@@ -21,12 +21,12 @@ namespace ARMClient.Authentication.AADAuthentication
     {
         // token cache file: C:\Users\{userName}\AppData\Local\.IdentityService\ANTARES_USER_TOKEN_CACHE.nocae
         // use different cache files between user and aad app to avoid issue 'Using a combined flat storage, like a file, to store both app and user tokens is not supported.'
-        private const string TokenUserAutheticationRecordJson = "ANTARES_USER_AUTH_RECORD.json";
-        private const string TokenUserCacheName = "ANTARES_USER_TOKEN_CACHE";
-        private const string TokenAppCacheName = "ANTARES_APP_TOKEN_CACHE";
+        private const string TokenUserAutheticationRecordName = "ANTARES_USER_AUTH_RECORD";
         private static readonly ConcurrentDictionary<string, AccessTokenCache> _inMemoryTokenCaches = new(StringComparer.OrdinalIgnoreCase);
         private static readonly ConcurrentDictionary<string, TokenCredential> _defaultAzureCredentials = new(StringComparer.OrdinalIgnoreCase);
-        private readonly static Lazy<string> TokenUserAuthenticationRecordFile = new Lazy<string>(() => Path.Combine(Environment.ExpandEnvironmentVariables($@"%USERPROFILE%\AppData\Local\.IdentityService"), TokenUserAutheticationRecordJson));
+        private readonly static Lazy<string> TokenUserAuthenticationRecordFile = new Lazy<string>(() => Path.Combine(Environment.ExpandEnvironmentVariables($@"%USERPROFILE%\AppData\Local\.IdentityService"), $"{TokenUserAutheticationRecordName}_{ARMConfiguration.Current.AzureEnvironment}.json"));
+        private readonly static Lazy<string> TokenUserCacheName = new Lazy<string>(() => $"ANTARES_USER_TOKEN_CACHE_{ARMConfiguration.Current.AzureEnvironment}");
+        private readonly static Lazy<string> TokenAppCacheName = new Lazy<string>(() => $"ANTARES_APP_TOKEN_CACHE_{ARMConfiguration.Current.AzureEnvironment}");
 
         public static AccessToken GetUserToken(string authorityHost, string tenantId, string scope, CancellationToken cancellationToken = default)
             => _inMemoryTokenCaches.GetOrAdd(GetCacheKey("user", tenantId, scope), () =>
@@ -96,7 +96,7 @@ namespace ARMClient.Authentication.AADAuthentication
                 return new InteractiveBrowserCredential(options: new()
                 {
                     AuthorityHost = authorityHostUri,
-                    TokenCachePersistenceOptions = new() { Name = TokenUserCacheName },
+                    TokenCachePersistenceOptions = new() { Name = TokenUserCacheName.Value },
                     AdditionallyAllowedTenants = { "*" },
                     AuthenticationRecord = PersistedAuthRecord.Deserialize(TokenUserAuthenticationRecordFile.Value),
                 });
@@ -115,7 +115,7 @@ namespace ARMClient.Authentication.AADAuthentication
                     // If UnsafeAllowUnencryptedStorage is false (the default), a CredentialUnavailableException will be raised in the case no data protection is available.
                     TokenCachePersistenceOptions = new()
                     {
-                        Name = TokenAppCacheName,
+                        Name = TokenAppCacheName.Value,
                     },
                 };
 
@@ -134,7 +134,7 @@ namespace ARMClient.Authentication.AADAuthentication
                 // If UnsafeAllowUnencryptedStorage is false (the default), a CredentialUnavailableException will be raised in the case no data protection is available.
                 TokenCachePersistenceOptions = new()
                 {
-                    Name = TokenAppCacheName,
+                    Name = TokenAppCacheName.Value,
                 },
             };
 

@@ -20,8 +20,8 @@ namespace ARMClient.Authentication.AADAuthentication
     // Use MSAL instead
     public static class MsalAuthHelper
     {
-        private const string TokenUserCacheName = "ANTARES_MSAL_USER_TOKEN_CACHE.dat";
-        private const string TokenAppCacheName = "ANTARES_MSAL_APP_TOKEN_CACHE.dat";
+        private const string TokenUserCacheName = "ANTARES_MSAL_USER_TOKEN_CACHE";
+        private const string TokenAppCacheName = "ANTARES_MSAL_APP_TOKEN_CACHE";
         private static readonly ConcurrentDictionary<string, IClientApplicationBase> _clientApplicationCache = new ConcurrentDictionary<string, IClientApplicationBase>(StringComparer.OrdinalIgnoreCase);
 
         public static async Task<AuthenticationResult> GetUserTokenAsync(string authorityHost, string tenantId, string scope, CancellationToken cancellationToken = default)
@@ -78,7 +78,7 @@ namespace ARMClient.Authentication.AADAuthentication
                     .WithAuthority(authorityUri, validateAuthority: true)
                     .Build();
                 storageProperties =
-                    new StorageCreationPropertiesBuilder(TokenAppCacheName, Environment.ExpandEnvironmentVariables($@"%USERPROFILE%\AppData\Local\.IdentityService"))
+                    new StorageCreationPropertiesBuilder($"{TokenAppCacheName}_{ARMConfiguration.Current.AzureEnvironment}.dat", Environment.ExpandEnvironmentVariables($@"%USERPROFILE%\AppData\Local\.IdentityService"))
                     .Build();
 
                 var cacheHelper = await MsalCacheHelper.CreateAsync(storageProperties);
@@ -94,7 +94,7 @@ namespace ARMClient.Authentication.AADAuthentication
                     .WithAuthority(authorityUri, validateAuthority: true)
                     .Build();
                 storageProperties =
-                    new StorageCreationPropertiesBuilder(TokenAppCacheName, Environment.ExpandEnvironmentVariables($@"%USERPROFILE%\AppData\Local\.IdentityService"))
+                    new StorageCreationPropertiesBuilder($"{TokenAppCacheName}_{ARMConfiguration.Current.AzureEnvironment}.dat", Environment.ExpandEnvironmentVariables($@"%USERPROFILE%\AppData\Local\.IdentityService"))
                     .Build();
 
                 var cacheHelper = await MsalCacheHelper.CreateAsync(storageProperties);
@@ -110,7 +110,7 @@ namespace ARMClient.Authentication.AADAuthentication
                     .WithAuthority(authorityUri, validateAuthority: true)
                     .Build();
                 storageProperties =
-                    new StorageCreationPropertiesBuilder(TokenUserCacheName, Environment.ExpandEnvironmentVariables($@"%USERPROFILE%\AppData\Local\.IdentityService"))
+                    new StorageCreationPropertiesBuilder($"{TokenUserCacheName}_{ARMConfiguration.Current.AzureEnvironment}.dat", Environment.ExpandEnvironmentVariables($@"%USERPROFILE%\AppData\Local\.IdentityService"))
                     .Build();
 
                 var cacheHelper = await MsalCacheHelper.CreateAsync(storageProperties);

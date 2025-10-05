@@ -178,6 +178,31 @@ namespace ARMClient
                                     certificate = new X509Certificate2(appKey, password);
                                 }
                             }
+                            else
+                            {
+                                var userStore = new X509Store(StoreName.My, StoreLocation.CurrentUser);
+                                userStore.Open(OpenFlags.ReadOnly);
+                                var machineStore = new X509Store(StoreName.My, StoreLocation.LocalMachine);
+                                machineStore.Open(OpenFlags.ReadOnly);
+                                try
+                                {
+                                    foreach (var store in new[] { userStore, machineStore })
+                                    {
+                                        var certs = store.Certificates.Find(X509FindType.FindByThumbprint, appKey, validOnly: true);
+                                        certs = certs.Count > 0 ? certs : store.Certificates.Find(X509FindType.FindBySubjectDistinguishedName, appKey.StartsWith("CN=", StringComparison.OrdinalIgnoreCase) ? appKey : $"CN={appKey}", validOnly: true);
+                                        if (certs.Count > 0)
+                                        {
+                                            certificate = certs[0];
+                                            break;
+                                        }
+                                    }
+                                }
+                                finally
+                                {
+                                    userStore.Close();
+                                    machineStore.Close();
+                                }
+                            }
                         }
 
                         if (certificate == null)
@@ -187,6 +212,8 @@ namespace ARMClient
 
                         _parameters.ThrowIfUnknown();
 
+                        DefaultAzureCredentialHelper.ClearTokenCache();
+                        persistentAuthHelper.ClearTokenCache();
                         persistentAuthHelper.SetAzureEnvironment(Utils.GetDefaultEnv());
                         var cacheInfo = certificate != null ?
                             persistentAuthHelper.GetTokenBySpn(tenantId, appId, certificate, resource).Result :
